@@ -221,16 +221,10 @@ for sub_i = 1:n_sub
 
         runs = 5;           % number of random starting points
         
-        % file_name = sprintf('model_sigrep_run%d.mat',runs);
-        % out_fit = fit_model_circinf(data_fit,'nrun',runs,'verbose',1,'sigsen',0,'siginf',0);
-
-        % file_name = sprintf('model_siginf_run%d.mat',runs);
-        % out_fit = fit_model_circinf(data_fit,'nrun',runs,'verbose',1,'sigsen',0,'sigrep',0);
-
-        % file_name = sprintf('model_sigsen_run%d.mat',runs);
+        % file_name = 'output_fit_sigsen.mat';
         % out_fit = fit_model_circinf(data_fit,'nrun',runs,'verbose',1,'siginf',0,'sigrep',0);
 
-        file_name = sprintf('model_all_run%d.mat',runs);
+        file_name = 'output_fit_all.mat';
         out_fit = fit_model_circinf(data_fit,'nrun',runs,'verbose',1);
 
         % disp(out_fit);
