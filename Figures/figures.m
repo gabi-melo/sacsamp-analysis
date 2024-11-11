@@ -2,13 +2,13 @@ clear all
 close all
 clc
 
-project_path = '/Users/gabimelo/Documents/GitHub/sacsamp/';
+project_path = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
 
 addpath(genpath(project_path))
-cd([project_path 'Analysis/'])
+cd(project_path)
 
-load([project_path '/Analysis/full_data.mat'])
-load(project_path '/Analysis/Model/model_fix_sigsen_sigrep_5.mat'])
+load([project_path 'full_data.mat'])
+load([project_path 'Model/Outputs/model_siginf_run5.mat'])
 
 subs = unique(data.sub_num);
 n_sub = length(subs);
@@ -427,7 +427,7 @@ end
 
 %%
 
-labels = {'Full', 'sigRep', 'sigSen', 'sigInf'};
+labels = {'All', 'sigRep', 'sigSen', 'sigInf'};
 
 figure('Color','white');
 for cond_i = 1:n_cond
@@ -441,15 +441,17 @@ for cond_i = 1:n_cond
     aic(:,3) = (model_eval.aic(model_eval.sigsen == 1 & model_eval.siginf == 0 & model_eval.sigrep == 0 & model_eval.cond == cond_i))
     aic(:,4) = (model_eval.aic(model_eval.sigsen == 0 & model_eval.siginf == 1 & model_eval.sigrep == 0 & model_eval.cond == cond_i))
 
-    aic = rescale(aic);
+    % aic = rescale(aic);
     % aic = rescale(aic)/28;
 
     bar(1:4,sum(aic))
     % ylim([0.4 0.45])
     % set(gca,'YTick',0.4:0.01:0.45);
 
-    ylim([11 12.5])
-    set(gca,'YTick',11:0.5:12.5);
+    ylim([4000 6500])
+
+    % ylim([11 12.5])
+    % set(gca,'YTick',11:0.5:12.5);
 
     ylabel('AIC')
     xlabel('Free parameters')
@@ -484,23 +486,40 @@ labels = {'ACT', 'PAS', 'FIX'};
 
 figure('Color','white');
 subplot(1,3,1)
-siginfs = [vertcat(model_fit(:,1).siginf) vertcat(model_fit(:,2).siginf) vertcat(model_fit(:,3).siginf)]
-bar([1 2 3],mean(siginfs))
+% siginfs = [vertcat(model_fit(:,1).siginf) vertcat(model_fit(:,2).siginf) vertcat(model_fit(:,3).siginf)]
+% bar([1 2 3],mean(siginfs))
+% hold on
+% std_err = std(siginfs)/length(siginfs)
+% er = errorbar([1 2 3],mean(siginfs),-std_err,+std_err);    
+% er.Color = [0 0 0];                            
+% er.LineStyle = 'none';  
+% 
+% title('siginf')
+% ylim([2 3])
+% set(gca,'YTick',2:0.2:3);
+% axis square
+% box off
+% set(gca,'TickDir','out')
+% 
+% ylabel('siginf')
+% xticklabels(labels)
+
+sigsens = [vertcat(model_fit(:,1).sigsen) vertcat(model_fit(:,2).sigsen) vertcat(model_fit(:,3).sigsen)]
+bar([1 2 3],mean(sigsens))
 hold on
-std_err = std(siginfs)/length(siginfs)
-er = errorbar([1 2 3],mean(siginfs),-std_err,+std_err);    
+std_err = std(sigsens)/length(sigsens)
+er = errorbar([1 2 3],mean(sigsens),-std_err,+std_err);    
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';  
 
-title('siginf')
-ylim([2 3])
-set(gca,'YTick',2:0.2:3);
+title('sigsen')
+ylim([24 28])
+set(gca,'YTick',24:1:28);
 axis square
 box off
 set(gca,'TickDir','out')
 
-ylabel('siginf')
-% xlabel('Condition')
+ylabel('sigsen')
 xticklabels(labels)
 
 subplot(1,3,2)
@@ -542,3 +561,289 @@ set(gca,'TickDir','out')
 ylabel('alpha')
 % xlabel('condition')
 xticklabels(labels)
+
+
+%%
+
+
+
+labels = {'ACT', 'PAS', 'FIX'};
+
+figure('Color','white');
+subplot(2,3,1)
+siginfs = [vertcat(model_fit(:,1).siginf) vertcat(model_fit(:,2).siginf) vertcat(model_fit(:,3).siginf)]
+bar([1 2 3],mean(siginfs))
+hold on
+std_err = std(siginfs)/length(siginfs)
+er = errorbar([1 2 3],mean(siginfs),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';  
+
+title('siginf')
+ylim([1 1.5])
+set(gca,'YTick',0:0.1:3);
+% ylim([2 3])
+% set(gca,'YTick',2:0.2:3);
+axis square
+box off
+set(gca,'TickDir','out')
+
+ylabel('siginf')
+xticklabels(labels)
+
+
+subplot(2,3,2)
+sigsens = [vertcat(model_fit(:,1).sigsen) vertcat(model_fit(:,2).sigsen) vertcat(model_fit(:,3).sigsen)]
+bar([1 2 3],mean(sigsens))
+hold on
+std_err = std(sigsens)/length(sigsens)
+er = errorbar([1 2 3],mean(sigsens),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';  
+
+title('sigsen')
+ylim([5 15])
+set(gca,'YTick',5:2.5:15);
+axis square
+box off
+set(gca,'TickDir','out')
+
+ylabel('sigsen')
+xticklabels(labels)
+
+
+subplot(2,3,3)
+sigreps = [vertcat(model_fit(:,1).sigrep) vertcat(model_fit(:,2).sigrep) vertcat(model_fit(:,3).sigrep)]
+bar([1 2 3],mean(sigreps))
+hold on
+std_err = std(sigreps)/length(sigreps)
+er = errorbar([1 2 3],mean(sigreps),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';  
+
+title('sigrep')
+ylim([5 8])
+set(gca,'YTick',5:0.5:8);
+axis square
+box off
+set(gca,'TickDir','out')
+
+ylabel('sigrep')
+% xlabel('Condition')
+xticklabels(labels)
+
+
+subplot(2,3,4)
+plapses = [(vertcat(model_fit(:,1).plapse)) (vertcat(model_fit(:,2).plapse)) (vertcat(model_fit(:,3).plapse))]
+bar([1 2 3],mean(plapses))
+hold on
+std_err = std(plapses)/length(plapses)
+er = errorbar([1 2 3],mean(plapses),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';  
+
+title('plapse')
+ylim([0 0.04])
+set(gca,'YTick',0:0.01:0.04);
+axis square
+box off
+set(gca,'TickDir','out')
+
+ylabel('plapse')
+% xlabel('condition')
+xticklabels(labels)
+
+
+subplot(2,3,5)
+alphas = [(vertcat(model_fit(:,1).alpha)) (vertcat(model_fit(:,2).alpha)) (vertcat(model_fit(:,3).alpha))]
+bar([1 2 3],mean(alphas))
+hold on
+std_err = std(alphas)/length(alphas)
+er = errorbar([1 2 3],mean(alphas),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';  
+
+title('alpha')
+ylim([0 0.25])
+set(gca,'YTick',0:0.05:0.25);
+axis square
+box off
+set(gca,'TickDir','out')
+
+ylabel('alpha')
+% xlabel('condition')
+xticklabels(labels)
+
+
+
+
+%%
+
+
+
+labels = {'ACT', 'PAS', 'FIX'};
+
+subplot(3,3,1)
+siginf_diff = fit_siginf.siginf - fit_all.siginf;
+bar([1 2 3], mean(siginf_diff))
+
+hold on
+std_err = std(siginf_diff)/length(siginf_diff)
+er = errorbar([1 2 3],mean(siginf_diff),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';  
+
+ylabel('\Deltasiginf')
+xticklabels(labels)
+title('fit siginf - fit all')
+axis square
+box off
+set(gca,'TickDir','out')
+
+
+subplot(3,3,2)
+sigsen_diff = fit_sigsen.sigsen - fit_all.sigsen;
+bar([1 2 3], mean(sigsen_diff))
+
+hold on
+std_err = std(sigsen_diff)/length(sigsen_diff)
+er = errorbar([1 2 3],mean(sigsen_diff),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';  
+
+ylabel('\Deltasigrep')
+xticklabels(labels)
+title('fit sigsen - fit all')
+axis square
+box off
+set(gca,'TickDir','out')
+
+
+subplot(3,3,3)
+sigrep_diff = fit_sigrep.sigrep - fit_all.sigrep;
+bar([1 2 3], mean(sigrep_diff))
+
+hold on
+std_err = std(sigrep_diff)/length(sigrep_diff)
+er = errorbar([1 2 3],mean(sigrep_diff),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';  
+
+ylabel('\Deltasigrep')
+xticklabels(labels)
+title('fit sigrep - fit all')
+axis square
+box off
+set(gca,'TickDir','out')
+
+
+subplot(3,3,4)
+alpha_diff = fit_siginf.alpha - fit_all.alpha;
+bar([1 2 3], mean(alpha_diff))
+
+hold on
+std_err = std(alpha_diff)/length(alpha_diff)
+er = errorbar([1 2 3],mean(alpha_diff),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none'; 
+
+ylabel('\Deltaalpha')
+xticklabels(labels)
+title('fit siginf - fit all')
+axis square
+box off
+set(gca,'TickDir','out')
+
+
+subplot(3,3,5)
+alpha_diff = fit_sigsen.alpha - fit_all.alpha;
+bar([1 2 3], mean(alpha_diff))
+
+hold on
+std_err = std(alpha_diff)/length(alpha_diff)
+er = errorbar([1 2 3],mean(alpha_diff),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none'; 
+
+ylabel('\Deltaalpha')
+xticklabels(labels)
+title('fit sigsen - fit all')
+axis square
+box off
+set(gca,'TickDir','out')
+
+
+subplot(3,3,6)
+alpha_diff = fit_sigrep.alpha - fit_all.alpha;
+bar([1 2 3], mean(alpha_diff))
+
+hold on
+std_err = std(alpha_diff)/length(alpha_diff)
+er = errorbar([1 2 3],mean(alpha_diff),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none'; 
+
+ylabel('\Deltaalpha')
+xticklabels(labels)
+title('fit sigrep - fit all')
+axis square
+box off
+set(gca,'TickDir','out')
+
+
+subplot(3,3,7)
+plapse_diff = fit_siginf.plapse - fit_all.plapse;
+bar([1 2 3], mean(plapse_diff))
+
+hold on
+std_err = std(plapse_diff)/length(plapse_diff)
+er = errorbar([1 2 3],mean(plapse_diff),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none'; 
+
+ylabel('\Deltaplapse')
+xticklabels(labels)
+title('fit siginf - fit all')
+axis square
+box off
+set(gca,'TickDir','out')
+
+
+subplot(3,3,8)
+plapse_diff = fit_sigsen.plapse - fit_all.plapse;
+bar([1 2 3], mean(plapse_diff))
+
+hold on
+std_err = std(plapse_diff)/length(plapse_diff)
+er = errorbar([1 2 3],mean(plapse_diff),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none'; 
+
+ylabel('\Deltaplapse')
+xticklabels(labels)
+title('fit sigsen - fit all')
+axis square
+box off
+set(gca,'TickDir','out')
+
+
+subplot(3,3,9)
+plapse_diff = fit_sigrep.plapse - fit_all.plapse;
+bar([1 2 3], mean(plapse_diff))
+
+hold on
+std_err = std(plapse_diff)/length(plapse_diff)
+er = errorbar([1 2 3],mean(plapse_diff),-std_err,+std_err);    
+er.Color = [0 0 0];                            
+er.LineStyle = 'none'; 
+
+ylabel('\Deltaplapse')
+xticklabels(labels)
+title('fit sigrep - fit all')
+axis square
+box off
+set(gca,'TickDir','out')
+
+
+
+
