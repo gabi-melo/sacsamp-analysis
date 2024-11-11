@@ -13,6 +13,10 @@ subs = unique(data.sub_num);
 n_sub = length(subs);
 n_cond = 3;
 
+% cond #1 = saccade active
+% cond #2 = saccade passive
+% cond #3 = fixation
+
 
 %%
 %%% get models evaluation metrics
@@ -27,7 +31,7 @@ model_eval.aic    = [];
 model_eval.ll     = [];
 
 
-file_name = 'model_sigrep_run5.mat';
+file_name = 'output_fit_sigrep.mat';
 load([project_path 'Model/Outputs/' file_name],'model_fit')
 for cond_i = 1:n_cond
     for sub_i = 1:n_sub
@@ -42,7 +46,7 @@ for cond_i = 1:n_cond
     end
 end
 
-file_name = 'model_siginf_run5.mat';
+file_name = 'output_fit_siginf.mat';
 load([project_path 'Model/Outputs/' file_name],'model_fit')
 for cond_i = 1:n_cond
     for sub_i = 1:n_sub
@@ -57,7 +61,7 @@ for cond_i = 1:n_cond
     end
 end
 
-file_name = 'model_sigsen_run5.mat';
+file_name = 'output_fit_sigsen.mat';
 load([project_path 'Model/Outputs/' file_name],'model_fit')
 for cond_i = 1:n_cond
     for sub_i = 1:n_sub
@@ -72,7 +76,7 @@ for cond_i = 1:n_cond
     end
 end
 
-file_name = 'model_all_run5.mat';
+file_name = 'output_fit_all.mat';
 load([project_path 'Model/Outputs/' file_name],'model_fit')
 for cond_i = 1:n_cond
     for sub_i = 1:n_sub
@@ -93,13 +97,13 @@ save([project_path 'Model/Outputs/model_eval'],'model_eval')
 %%
 %%% compare models 
 
-disp('model fit all')
+disp('aic fit all')
 aic = sum(model_eval.aic(model_eval.sigsen == 1 & model_eval.siginf == 1 & model_eval.sigrep == 1))
-disp('model fit sigrep')
+disp('aic fit sigrep')
 aic = sum(model_eval.aic(model_eval.sigsen == 0 & model_eval.siginf == 0 & model_eval.sigrep == 1))
-disp('model fit sigsen')
+disp('aic fit sigsen')
 aic = sum(model_eval.aic(model_eval.sigsen == 1 & model_eval.siginf == 0 & model_eval.sigrep == 0))
-disp('model fit siginf')
+disp('aic fit siginf')
 aic = sum(model_eval.aic(model_eval.sigsen == 0 & model_eval.siginf == 1 & model_eval.sigrep == 0))
 
 
@@ -108,32 +112,41 @@ aic = sum(model_eval.aic(model_eval.sigsen == 0 & model_eval.siginf == 1 & model
 
 cond_i = 3
 
-disp('model fit all')
+disp('aic fit all')
 aic = sum(model_eval.aic(model_eval.sigsen == 1 & model_eval.siginf == 1 & model_eval.sigrep == 1 & model_eval.cond == cond_i))
-disp('model fit sigrep')
+disp('aic fit sigrep')
 aic = sum(model_eval.aic(model_eval.sigsen == 0 & model_eval.siginf == 0 & model_eval.sigrep == 1 & model_eval.cond == cond_i))
-disp('model fit sigsen')
+disp('aic fit sigsen')
 aic = sum(model_eval.aic(model_eval.sigsen == 1 & model_eval.siginf == 0 & model_eval.sigrep == 0 & model_eval.cond == cond_i))
-disp('model fit siginf')
+disp('aic fit siginf')
 aic = sum(model_eval.aic(model_eval.sigsen == 0 & model_eval.siginf == 1 & model_eval.sigrep == 0 & model_eval.cond == cond_i))
 
 
 %%
-%%% save parameters from best model
+%%% save models parameters
 
 
-model_params.siginf(:,1) = vertcat(model_fit(:,1).siginf)
-model_params.siginf(:,2) = vertcat(model_fit(:,2).siginf)
-model_params.siginf(:,3) = vertcat(model_fit(:,3).siginf)
+load([project_path 'Model/Outputs/output_fit_sigrep.mat'],'model_fit')
 
-model_params.plapse(:,1) = vertcat(model_fit(:,1).plapse)
-model_params.plapse(:,2) = vertcat(model_fit(:,2).plapse)
-model_params.plapse(:,3) = vertcat(model_fit(:,3).plapse)
+fit_sigrep.siginf(:,1) = vertcat(model_fit(:,1).siginf)
+fit_sigrep.siginf(:,2) = vertcat(model_fit(:,2).siginf)
+fit_sigrep.siginf(:,3) = vertcat(model_fit(:,3).siginf)
 
-model_params.alpha(:,1) = vertcat(model_fit(:,1).alpha)
-model_params.alpha(:,2) = vertcat(model_fit(:,2).alpha)
-model_params.alpha(:,3) = vertcat(model_fit(:,3).alpha)
+fit_sigrep.sigsen(:,1) = vertcat(model_fit(:,1).sigsen)
+fit_sigrep.sigsen(:,2) = vertcat(model_fit(:,2).sigsen)
+fit_sigrep.sigsen(:,3) = vertcat(model_fit(:,3).sigsen)
 
+fit_sigrep.sigrep(:,1) = vertcat(model_fit(:,1).sigrep)
+fit_sigrep.sigrep(:,2) = vertcat(model_fit(:,2).sigrep)
+fit_sigrep.sigrep(:,3) = vertcat(model_fit(:,3).sigrep)
 
-save([project_path 'Model/Outputs/model_params'],'model_params')
+fit_sigrep.plapse(:,1) = vertcat(model_fit(:,1).plapse)
+fit_sigrep.plapse(:,2) = vertcat(model_fit(:,2).plapse)
+fit_sigrep.plapse(:,3) = vertcat(model_fit(:,3).plapse)
+
+fit_sigrep.alpha(:,1) = vertcat(model_fit(:,1).alpha)
+fit_sigrep.alpha(:,2) = vertcat(model_fit(:,2).alpha)
+fit_sigrep.alpha(:,3) = vertcat(model_fit(:,3).alpha)
+
+save([project_path 'Model/Outputs/params_fit_sigrep'],'fit_sigrep')
 
