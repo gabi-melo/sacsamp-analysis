@@ -8,17 +8,28 @@ addpath(genpath(project_path))
 cd(project_path)
 
 load([project_path 'full_data.mat'])
-load([project_path 'Model/Outputs/model_params'],'model_params')
+
+% cond #1 = saccade active
+% cond #2 = saccade passive
+% cond #3 = fixation
 
 
 %%
-%%% compare model parameters between conditions
+%%% compare fitted parameters between conditions
+
+% load([project_path 'Model/Outputs/params_fit_siginf'],'fit_siginf')
+load([project_path 'Model/Outputs/params_fit_all'],'fit_all')
+
+% params = fit_all;
 
 cond_a = 1;
-cond_b = 2;
+cond_b = 3;
 
-ya = model_params.siginf(:,cond_a);
-yb = model_params.siginf(:,cond_b);
+
+%%
+
+ya = params.siginf(:,cond_a);
+yb = params.siginf(:,cond_b);
 
 [H,P,CI,STATS] = ttest(ya,yb);
 
@@ -29,8 +40,8 @@ disp(P)
 
 %%
 
-ya = model_params.plapse(:,cond_a);
-yb = model_params.plapse(:,cond_b);
+ya = params.plapse(:,cond_a);
+yb = params.plapse(:,cond_b);
 
 [H,P,CI,STATS] = ttest(ya,yb);
 
@@ -41,8 +52,8 @@ disp(P)
 
 %%
 
-ya = model_params.alpha(:,cond_a);
-yb = model_params.alpha(:,cond_b);
+ya = params.alpha(:,cond_a);
+yb = params.alpha(:,cond_b);
 
 [H,P,CI,STATS] = ttest(ya,yb);
 
@@ -51,8 +62,32 @@ yb = model_params.alpha(:,cond_b);
 disp([mean(ya) mean(yb)])
 disp(P)
 
+%%
+
+ya = params.sigsen(:,cond_a);
+yb = params.sigsen(:,cond_b);
+
+[H,P,CI,STATS] = ttest(ya,yb);
+
+[P,H,STATS] = signrank(ya,yb);
+
+disp([mean(ya) mean(yb)])
+disp(P)
 
 %%
+
+ya = params.sigrep(:,cond_a);
+yb = params.sigrep(:,cond_b);
+
+[H,P,CI,STATS] = ttest(ya,yb);
+
+% [P,H,STATS] = signrank(ya,yb);
+
+disp([mean(ya) mean(yb)])
+disp(P)
+
+%%
+
 
 
 
