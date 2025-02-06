@@ -1,17 +1,14 @@
 clear all; clc;
 
-main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
+% main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
+main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';
+
 addpath(genpath(main_folder))
 cd(main_folder)
 
-addpath('/Users/gabimelo/Documents/MATLAB/Fieldtrip/')
-addpath('/Users/gabimelo/Documents/MATLAB/eeglab/')
+% addpath('/Users/gabimelo/Documents/MATLAB/Fieldtrip/')
+addpath('/Users/Gabi/Documents/MATLAB/Fieldtrip/')
 ft_defaults
-
-load([main_folder 'full_data.mat'],'data','trls')
-full_data = data;
-full_trls = trls;
-clear data trls
 
 
 % trigger labels
@@ -34,16 +31,18 @@ clear data trls
 %  7 | 8 | 9 
 % 10 |11 |12 
 
+
 %% select single block
 
-sub = 4;       % 04 | 18 | 22
-cond = 'fix';
+sub = 4;       % 4 | 18 | 22
 block = 3;
 
 if sub < 10
-    filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+    filedir = sprintf('F:/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+    % filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
 else
-    filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
+    filedir = sprintf('F:/SACSAMP/sacsamp%i_s%i/', sub, sub);
+    % filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
 end
 
 if block < 10
@@ -52,19 +51,11 @@ else
     filename = sprintf('run%i_sss.fif', block);
 end
 filepath = [filedir filename];
-                                    
-hdr = ft_read_header(filepath);
-raw = ft_read_data(filepath);
-evt = ft_read_event(filepath);
-
-% size(raw)
-% recording of 327 channels for 279 seconds sampled at 1000 Hz (279000 samples)
-
 
 
 %% select all blocks from a condition
 
-sub = 4;       % 04 | 18 | 22
+sub = 4;       % 4 | 18 | 22
 cond = 'fix';
 
 if strcmp(cond, 'act')
@@ -76,9 +67,11 @@ elseif strcmp(cond, 'fix')
 end
 
 if sub < 10
-    filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+    filedir = sprintf('F:/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+    % filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
 else
-    filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
+    filedir = sprintf('F:/SACSAMP/sacsamp%i_s%i/', sub, sub);
+    % filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
 end
 
 filename1 = sprintf('run0%i_sss.fif', blocks(1));
@@ -128,21 +121,14 @@ filepath = [filedir filename];
 ft_write_data(filepath, raw, 'header', hdr, 'event', evt);
 
 
-%%
-
-megplanar = hdr.label(strcmp(hdr.chantype, 'megplanar'))
-
-megmag = hdr.label(strcmp(hdr.chantype, 'megmag'))
-
-
 %% define trials based on triggers
 
 cfg = [];
 cfg.dataset = filepath;
 cfg.trialdef.eventtype = 'STI101';
-cfg.trialdef.eventvalue = [81:92];      % target onset
-cfg.trialdef.prestim = 0.25;
-cfg.trialdef.poststim = 0.5;
+cfg.trialdef.eventvalue = 81:92;      % target onset
+cfg.trialdef.prestim = 0.2;
+cfg.trialdef.poststim = 0.3;
 
 cfg = ft_definetrial(cfg);
 
@@ -154,7 +140,7 @@ cfg.bsfreq = [49 51; 99 100; 149 151];     % line frequency and its harmonics
 
 % cfg.dftfilter = 'yes';           % apply discrete Fourier transform filter to remove line noise
 % cfg.dftfreq = [50 100 150];      % line frequency and its harmonics
-% cfg.padding = 10;                % length (seconds) of trial padding
+% cfg.padding = 5;                 % length (seconds) of trial padding
 
 dat_preproc = ft_preprocessing(cfg);
 
@@ -169,46 +155,15 @@ cfg.layout = 'neuromag306all.lay';
 cfg.allowoverlap = 'yes';
 cfg.preproc.demean = 'yes';
 
-chans_meg = ft_channelselection('MEG*', dat_preproc.label);
-cfg.channel = [chans_meg(1:40)];
+cfg.channel = [chans_mag(1:40)];
 
-cfg.channel = megmag;
-
-cfg = ft_databrowser(cfg, dat_preproc);
+ft_databrowser(cfg, dat_preproc);
 
 
 %%
 
 chan = find(strcmp(dat_preproc.label, 'MEG0111'));
 plot(dat_preproc.time{1}, dat_preproc.trial{1}(chan,:))
-
-
-%%
-
-% insert end sample in cfg.trl 
-
-evt = ft_read_event(filepath);
-smp = vertcat(evt.sample);
-val = vertcat(evt.value);
-
-cfg.trl(:,2) = smp(ismember(val,[41:52]));
-
-dat_end = ft_redefinetrial(cfg, dat_preproc);
-
-
-%%
-
-arr_smp = smp(ismember(val,[41:52]));
-
-tar_smp = smp(ismember(val,[81:92]));
-
-tar_smp(diff(tar_smp)<5) = [];
-
-
-arr_smp - tar_smp
-
-tar_smp(2:end) - arr_smp(1:end-1)
-
 
 
 %% remove extra channels
@@ -241,7 +196,8 @@ dat_select.label(314) = {'PUPIL'};
 
 dat = dat_select;
 
-filename = sprintf('dat_prep_%s.mat', cond);
+% filename = sprintf('dat_prep_%s.mat', cond);
+filename = sprintf('dat_prep_b%i_%s.mat', block, cond);
 filepath = [filedir filename];
 save(filepath, 'dat')
 

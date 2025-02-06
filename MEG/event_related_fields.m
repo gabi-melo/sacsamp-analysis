@@ -31,7 +31,7 @@ load(filepath, 'dat')
 cfg = [];
 cfg.channel = {'MEG*'};       
 cfg.demean = 'yes';
-cfg.baselinewindow = [-0.25 0];
+% cfg.baselinewindow = [-0.25 0];
 
 dat_evt = ft_preprocessing(cfg, dat);
 
@@ -48,7 +48,6 @@ cfg = [];
 cfg.showlabels = 'yes';
 cfg.fontsize = 8;
 cfg.layout = 'neuromag306all.lay';
-% cfg.baseline = [-0.25 0];
 % cfg.xlim = [-0.25 0.5];
 % cfg.ylim = [-3e-13 3e-13];
 

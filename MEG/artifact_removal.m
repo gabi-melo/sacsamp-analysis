@@ -1,25 +1,32 @@
 clear all; clc;
 
-main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
+% main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
+main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';
+
 addpath(genpath(main_folder))
 cd(main_folder)
 
-addpath('/Users/gabimelo/Documents/MATLAB/Fieldtrip/')
+% addpath('/Users/gabimelo/Documents/MATLAB/Fieldtrip/')
+addpath('/Users/Gabi/Documents/MATLAB/Fieldtrip/')
 ft_defaults
 
 
 %% load data file
 
 sub = 4;       % 4 | 18 | 22
+block = 6;
 cond = 'fix';
 
 if sub < 10
-    filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+    % filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+    filedir = sprintf('F:/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
 else
-    filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
+    % filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
+    filedir = sprintf('F:/SACSAMP/sacsamp%i_s%i/', sub, sub);
 end
 
-filename = sprintf('dat_prep_%s.mat', cond);
+% filename = sprintf('dat_prep_%s.mat', cond);
+filename = sprintf('dat_prep_b%i_%s.mat', block, cond);
 filepath = [filedir filename];
 load(filepath, 'dat')
 
@@ -30,7 +37,8 @@ load(filepath, 'dat')
 %% select meg channels
 
 cfg = [];
-cfg.channel = 'MEG*'; 
+chans_mag = ft_channelselection('megmag', dat.hdr.label);
+cfg.channel = chans_mag; 
 
 dat_meg = ft_preprocessing(cfg, dat);
 
@@ -46,7 +54,7 @@ cfg.layout = 'neuromag306all.lay';
 cfg.channel = {'MEG*'};
 
 % directly returns the cleaned data
-dat_clean_vis = ft_rejectvisual(cfg, dat_meg); 
+dat_clean_vis = ft_rejectvisual(cfg, dat); 
 
 
 %% detect artifacts using ft_databrowser
@@ -60,13 +68,17 @@ cfg.layout = 'neuromag306all.lay';
 cfg.allowoverlap = 'yes';
 cfg.preproc.demean = 'yes';
 
-chans_meg = ft_channelselection('MEG*', dat.label);
-cfg.channel = [chans_meg(1:40)];
+cfg.plotevents = 'yes';
+
+cfg.channel = {'EOGH','EOGV','EYEH','EYEV'};
+
+cfg.chanscale = [400,400,0.5,0.5];
 
 % cfg.channelclamped = {'ECG', 'EOGH', 'EOGV'};
 
-% cfg = ft_databrowser(cfg, dat);
-cfg = ft_databrowser(cfg, dat_meg);
+cfg.verticalpadding = 0.1;
+
+cfg = ft_databrowser(cfg, dat);
 
 % keep the time of the artifacts
 cfg_artfctdef = cfg.artfctdef;
