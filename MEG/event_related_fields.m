@@ -29,7 +29,10 @@ load(filepath, 'dat')
 %% preprocess data
 
 cfg = [];
-cfg.channel = {'MEG*'};       
+
+chans_mag = ft_channelselection('megmag', dat.hdr.label);
+cfg.channel = chans_mag; 
+
 cfg.demean = 'yes';
 % cfg.baselinewindow = [-0.25 0];
 
