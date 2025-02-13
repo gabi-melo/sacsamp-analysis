@@ -36,9 +36,10 @@ ft_defaults
 
 
 %%
-%%% select data file
 
-sub = 4;       % 4 | 18 | 22
+%%% load data
+
+sub = 22;       % 4 | 18 | 22
 block = 12;
 
 if sub < 10
@@ -79,7 +80,6 @@ end
 
 cfg = [];
 cfg.channel = ft_channelselection(chans, dat_preproc.label);
-
 dat_select = ft_selectdata(cfg, dat_preproc);
 
 
@@ -87,9 +87,9 @@ dat_select = ft_selectdata(cfg, dat_preproc);
 
 dat_select.label(1) = {'EOGH'};
 dat_select.label(2) = {'EOGV'};
-dat_select.label(3) = {'ECG'};
-dat_select.label(310) = {'EMG1'};
-dat_select.label(311) = {'EMG2'};
+% dat_select.label(3) = {''};
+% dat_select.label(310) = {''};
+% dat_select.label(311) = {''};
 dat_select.label(312) = {'EYEH'};
 dat_select.label(313) = {'EYEV'};
 dat_select.label(314) = {'PUPIL'};
@@ -98,7 +98,6 @@ dat_select.label(314) = {'PUPIL'};
 %%% save data
 
 dat = dat_select;
-
 filename = sprintf('dat_prep_b%i.mat', block);
 filepath = [filedir filename];
 save(filepath, 'dat')
@@ -159,7 +158,6 @@ cfg.viewmode = 'vertical';
 cfg.continuous = 'yes'; 
 cfg.layout = 'neuromag306all.lay';
 cfg.allowoverlap = 'yes';
-cfg.preproc.demean = 'yes';
 cfg.plotevents = 'yes';
 cfg.blocksize = 50;
 cfg.verticalpadding = 0.1;

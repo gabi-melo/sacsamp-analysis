@@ -28,39 +28,36 @@ else
     filedir = sprintf('%ssacsamp0%i_s%i/', data_folder, sub, sub);
 end
 
-filename = sprintf('dat_prep_b%i.mat', block);
+filename = sprintf('dat_clean_b%i.mat', block);
 filepath = [filedir filename];
 load(filepath, 'dat')
-dat_prep = dat;
+dat_clean = dat;
 
 
-%%% detect eye artifacts
+%%% apply line noise filter
 
-cfg = [];
-cfg.viewmode = 'vertical';
-cfg.continuous = 'no';
-cfg.layout = 'neuromag306all.lay';
-cfg.allowoverlap = 'yes';
-cfg.verticalpadding = 0.1;
-
-% cfg.channel = {'EYEH','EYEV'};
-cfg.channel = {'EOGH','EOGV','EYEH','EYEV'};
-cfg.chanscale = [400,400,0.5,0.5];
-
-cfg = ft_databrowser(cfg, dat_prep);
-cfg_artfctdef = cfg.artfctdef;
-
-
-%% 
-
-%%% remove artifacts and save data
+% cfg.bsfilter = 'yes';                      % apply band-stop filter
+% cfg.bsfreq = [49 51; 99 100; 149 151];     % line frequency and its harmonics
 
 cfg = [];
-cfg.artifactdef = cfg_artfctdef;
-dat_clean = ft_rejectartifact(cfg, dat_prep);
+cfg.dftfilter = 'yes';           % apply discrete Fourier transform filter
+cfg.dftfreq = [50 100 150];      % line frequency and its harmonics
+cfg.padding = 5;                 % length (seconds) of trial padding
+dat_dft = ft_preprocessing(cfg, dat_clean);
 
-dat = dat_clean;
-filename = sprintf('dat_clean_b%i.mat', block);
+
+%%% apply lowpass filter
+
+cfg = [];
+cfg.lpfilter = 'yes';                 
+cfg.lpfreq = 35;                 % lowpass at 35 Hz
+dat_lp = ft_preprocessing(cfg, dat_dft);
+
+
+%%% save data
+
+dat = dat_lp;
+filename = sprintf('dat_filt_b%i.mat', block);
 filepath = [filedir filename];
 save(filepath,'dat')
 
