@@ -1,6 +1,7 @@
-clear all; clc;
+clear all
+clc
 
-at_usp = true;
+at_usp = false;
 
 if at_usp
     main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';
@@ -18,11 +19,27 @@ cd(main_folder)
 addpath(ft_folder)
 ft_defaults
 
+subs_meg = [1:28];
+subs_meg([8 9 10 11 12 13]) = [];
+cond_str = {'act' 'pas' 'fix'};
+cond_num = [1 2 3];
+blocks = [1 4 7 10; 2 5 8 11; 3 6 9 12];
+
+for s = 1:numel(subs_meg)
+    sub = subs_meg(s);
+    if sub < 10
+        filedir{sub} = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+    else
+        filedir{sub} = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
+    end
+end
+
 load('full_data.mat','data')
 task_info = data;
 clear data
 
-sub_n = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 35 45 36 48 16 29 38 30];
+subs_num = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 45 36 48 16 29 38 30 51];
+
 
 % trigger labels
 % act|pas|fix
@@ -34,6 +51,7 @@ sub_n = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 35 45 36 48 16
 % 32 |33 |34 - response offset
 % 41:52 - array onset
 % 81:92 - target onset
+% 61:72 - cue onset
 
 % blocks num
 % act|pas|fix
@@ -43,104 +61,257 @@ sub_n = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 35 45 36 48 16
 % 10 |11 |12 
 
 
-%%
-
-%%% load data
-
-sub = 4;       % 4 | 18 | 22
-block = 12;
-
-if sub < 10
-    filedir = sprintf('%ssacsamp0%i_s0%i/', data_folder, sub, sub);
-else
-    filedir = sprintf('%ssacsamp%i_s%i/', data_folder, sub, sub);
-end
-
-if block < 10
-    filename = sprintf('run0%i_sss.fif', block);
-else
-    filename = sprintf('run%i_sss.fif', block);
-end
+%% data preprocessing
 
 
-%%% define trials based on triggers
+subs = [2];
 
-cfg = [];
-cfg.dataset = [filedir filename];
-cfg.trialdef.eventtype = 'STI101';
-cfg.trialdef.eventvalue = 81:92;      % target onset
-cfg.trialdef.prestim = 0.2;
-cfg.trialdef.poststim = 0.3;
+cond_str = {'fix'};
+cond_num = [3];
 
-cfg = ft_definetrial(cfg);
+save_raw = true;
 
 
-%%% add trial info to cfg.trl
+for s = 1:numel(subs)
 
-trl_num = task_info.trl_num(task_info.sub_num == sub_n(sub) & task_info.blc_num==block);
-targ_len = task_info.targ_len(task_info.sub_num == sub_n(sub) & task_info.blc_num==block);
-targ_num = task_info.targ_num(task_info.sub_num == sub_n(sub) & task_info.blc_num==block);
+    sub = subs(s);
 
-% deal with trigger duplicates
-if length(cfg.trl) > 216
-    r = find((diff(cfg.trl(:,4))>1) | (diff(cfg.trl(:,4))==0));
-    for i = 1:numel(r)
-        trl_num = trl_num([1:r(i) nan(1,1) r(i)-1:end]);
-        targ_len = targ_len([1:r(i) nan(1,1) r(i)-1:end]);
-        targ_num = targ_num([1:r(i) nan(1,1) r(i)-1:end]);
+    for c = 1:numel(cond_str)
+
+        ci = cond_num(c);
+        cs = cond_str{c};
+
+        fprintf('\n\npreprocessing sub %i cond %s \n\n', sub, cs)
+
+        if save_raw 
+
+            %%% concatenate blocks
+    
+            filename1 = sprintf('run0%i_sss.fif', blocks(ci,1));
+            dat1 = ft_read_data([filedir{sub} filename1]);
+            evt1 = ft_read_event([filedir{sub} filename1]);
+    
+            filename2 = sprintf('run0%i_sss.fif', blocks(ci,2));
+            dat2 = ft_read_data([filedir{sub} filename2]);
+            evt2 = ft_read_event([filedir{sub} filename2]);
+    
+            filename3 = sprintf('run0%i_sss.fif', blocks(ci,3));
+            dat3 = ft_read_data([filedir{sub} filename3]);
+            evt3 = ft_read_event([filedir{sub} filename3]);
+    
+            filename4 = sprintf('run%i_sss.fif', blocks(ci,4));
+            dat4 = ft_read_data([filedir{sub} filename4]);
+            evt4 = ft_read_event([filedir{sub} filename4]);
+    
+            hdr = ft_read_header([filedir{sub} filename4]);
+    
+            dat = cat(2, dat1, dat2, dat3, dat4);      % concatenate the data along the 2nd dimension
+    
+            % shift the sample of the events or triggers
+            for i = 1:length(evt2)
+                nsamples1 = size(dat1,2);
+                evt2(i).sample = evt2(i).sample + nsamples1;
+            end
+    
+            for i = 1:length(evt3)
+                nsamples2 = nsamples1 + size(dat2,2);
+                evt3(i).sample = evt3(i).sample + nsamples2;
+            end
+    
+            for i = 1:length(evt4)
+                nsamples3 = nsamples2 + size(dat3,2);
+                evt4(i).sample = evt4(i).sample + nsamples3;
+            end
+    
+            evt = cat(1, evt1, evt2, evt3, evt4);       % concatenate the events along the 2nd dimension
+    
+    
+            %%% save raw data
+    
+            fprintf('\n\n  saving concatenated raw data - sub %i cond %s \n\n', sub, cs)
+            filename = sprintf('raw_cat_%s.vhdr', cs);
+            ft_write_data([filedir{sub} filename], dat, 'header', hdr, 'event', evt);
+            disp(' saved !')
+
+        end
+
+        filename = sprintf('raw_cat_%s.vhdr', cs);
+
+        %%% define trials based on triggers
+        
+        cfg = [];
+        cfg.dataset = [filedir{sub} filename];
+        cfg.trialdef.eventtype = 'STI101';
+        cfg.trialdef.eventvalue = 81:92;      % target onset
+        cfg.trialdef.prestim = 0.2;
+        cfg.trialdef.poststim = 0.3;
+        
+        cfg = ft_definetrial(cfg);
+       
+
+        %%% detect trigger duplicates
+
+        r = []; d = [];
+        
+        r = find(diff(cfg.trl(:,4))==0)';    % find immediate repetitions
+        d = find(diff(cfg.trl(:,4))>1)';     % find late repetitions
+    
+        if numel(r) > 0
+            r = r+1;
+        end
+    
+        % check if the duplicates were correctly identified
+        for i = 1:numel(r)
+            fprintf('\n\n  found a trigger repetition at trial %i (shown at line 3): \n\n', r(i))
+            disp(cfg.trl([r(i)-2:r(i)+2],:))
+        end
+
+        for i = 1:numel(d)
+            fprintf('\n\n  found a trigger repetition at trial %i (shown at line 3): \n\n', d(i))
+            disp(cfg.trl([d(i)-2:d(i)+2],:))
+        end
+    
+        % if numel(r) > 0 || numel(d) > 0
+        %     answer = questdlg('Continue?','','Yes!','Abort','Yes!');
+        %     switch answer
+        %         case 'Abort'
+        %             error('something went wrong : aborted preprocessing ! ')
+        %     end
+        % end
+
+        if sub == 6 & strcmp(cs,'pas')
+            r = [r 41 42 43];
+        elseif sub == 7 & strcmp(cs,'pas')
+            r = [r 573 574 575];
+        elseif sub == 7 & strcmp(cs,'fix')
+            r = [r 97 98 99 264 265 754 755];
+        elseif sub == 17 & strcmp(cs,'pas')
+            r = [r 1 2 3 4];
+        elseif sub == 28 & strcmp(cs,'fix')
+            r = [r 1 2];
+        end
+
+        %%% remove duplicates
+
+        trls_to_keep = 1:length(cfg.trl);
+        trls_to_keep([r d]) = [];
+        cfg.trials = trls_to_keep;
+        
+        cfg.trl([r d],:) = [];
+
+
+        %%% add stimulus info to cfg.trl
+        
+        cfg.trl(:,5) = task_info.trl_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
+        cfg.trl(:,6) = task_info.targ_len(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
+        cfg.trl(:,7) = task_info.targ_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
+        cfg.trl(:,8) = task_info.blc_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
+        cfg.trl(:,9) = task_info.ref_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
+
+        % cfg.trl(:,5) = task_info.trl_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+        % cfg.trl(:,6) = task_info.targ_len(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+        % cfg.trl(:,7) = task_info.targ_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+        % cfg.trl(:,8) = task_info.blc_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+        % cfg.trl(:,9) = task_info.ref_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+        
+
+        %%% check number of trials
+
+        targ1 = (cfg.trl(:,4) == 81);             % first target
+        ntrls = sum(cfg.trl(targ1,7) == 1);
+        if ntrls ~= max(task_info.ref_num)
+            error('something went wrong : incorrect number of trials !')
+        end
+
+
+        %%% preprocess data
+
+        dat_prep = ft_preprocessing(cfg);
+        
+        
+        %%% rename channels
+        
+        dat_prep.label(1) = {'EOGH'};
+        dat_prep.label(2) = {'EOGV'};
+        % dat_select.label(3) = {''};
+        % dat_select.label(end-6) = {''};
+        % dat_select.label(end-5) = {''};
+        dat_prep.label(end-4) = {'EYEH'};
+        dat_prep.label(end-3) = {'EYEV'};
+        dat_prep.label(end-2) = {'PUPIL'};
+               
+            
+        %%% save preprocessed data
+        
+        fprintf('\n\n  saving preprocessed data - sub %i cond %s \n\n', sub, cs)
+        
+        dat = dat_prep;
+        filename = sprintf('dat_prep_%s.mat', cs);
+        save([filedir{sub} filename], 'dat')
+        
+        trl = cfg.trl;
+        filename = sprintf('trl_prep_%s.mat', cs);
+        save([filedir{sub} filename], 'trl')
+        
+        evt = cfg.event;
+        filename = sprintf('evt_prep_%s.mat', cs);
+        save([filedir{sub} filename], 'evt')
+
+        disp(' saved !')
+
     end
 end
 
-cfg.trl(:,5) = trl_num;
-cfg.trl(:,6) = targ_len;
-cfg.trl(:,7) = targ_num;
+
+%%
 
 
-%%% preprocess data
 
-dat_preproc = ft_preprocessing(cfg);
+%%
 
+%%% plot orientation of planar gradiometers
 
-%%% remove extra channels
+filename = '/Volumes/PortableSSD/SACSAMP/sacsamp22_s22/run01_sss.fif';
 
-if sub <= 9
-    chans = {'all', '-IASX+', '-IASX-', '-IASY+', '-IASY-', '-IASZ+', '-IASZ-', '-IAS_DX', '-IAS_DY', '-IAS_X', '-IAS_Y', '-IAS_Z', '-SYS201'};
-else
-    chans = {'all', '-EXCI', '-IASX+', '-IASX-', '-IASY+', '-IASY-', '-IASZ+', '-IASZ-', '-IAS_DX', '-IAS_DY', '-IAS_X', '-IAS_Y', '-IAS_Z', '-SYS201'};
+grad = ft_read_sens(filename, 'senstype', 'meg');
+
+sel = find(strcmp(grad.chantype, 'megplanar'));
+
+for i=1:numel(sel)
+j = sel(i);
+clear coilindex*
+coilindex1 = find(grad.tra(j,:)>0)
+coilindex2 = find(grad.tra(j,:)<0)
+pos(i,:) = (grad.coilpos(coilindex2,:) + grad.coilpos(coilindex1,:))/2;
+ori(i,:) = grad.coilpos(coilindex2,:) - grad.coilpos(coilindex1,:);
+ori(i,:) = ori(i,:)/norm(ori(i,:));
+
 end
 
-cfg.channel = ft_channelselection(chans, dat_preproc.label);
-dat_select = ft_selectdata(cfg, dat_preproc);
+figure
+quiver3(pos(:,1), pos(:,2), pos(:,3), ori(:,1), ori(:,2), ori(:,3))
+axis equal
+axis vis3d
 
 
-%%% rename channels
+%%
 
-dat_select.label(1) = {'EOGH'};
-dat_select.label(2) = {'EOGV'};
-% dat_select.label(3) = {''};
-% dat_select.label(310) = {''};
-% dat_select.label(311) = {''};
-dat_select.label(312) = {'EYEH'};
-dat_select.label(313) = {'EYEV'};
-dat_select.label(314) = {'PUPIL'};
+%%% visualize the head position indicator coils
 
+filename = '/Volumes/PortableSSD/SACSAMP/sacsamp22_s22/run01_sss.fif';
 
-if length(cfg.trl) > 216
-    fprintf('\n\n found %i trigger duplicates \n', numel(r))
+% visualize the known/fixed positions of the sensors
+hdr = ft_read_header(filename, 'coordsys', 'dewar');
+ft_plot_sens(hdr.grad);
+
+% visualize the digitized positions of the head position indicator coils
+shape = ft_read_headshape(filename, 'coordsys', 'dewar');
+for ci = 1:size(shape.pos,1)
+  if ~isempty(strfind(shape.label{ci},'hpi'))
+      hold on;
+      plot3(shape.pos(ci,1),shape.pos(ci,2),shape.pos(ci,3), 'ro', 'MarkerSize', 12, 'LineWidth', 3);
+      hold on;
+      text(shape.pos(ci,1),shape.pos(ci,2),shape.pos(ci,3), sscanf(shape.label{ci},'hpi_%s'));
+  end
 end
-
-
-%%% save data
-
-dat = dat_select;
-filename = sprintf('dat_prep_b%i.mat', block);
-save([filedir filename], 'dat')
-
-trl = cfg.trl;
-filename = sprintf('trl_b%i.mat', block);
-save([filedir filename], 'trl')
-
-evt = cfg.event;
-filename = sprintf('evt_b%i.mat', block);
-save([filedir filename], 'evt')
 
