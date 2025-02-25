@@ -1,7 +1,7 @@
 clear all
 clc
 
-at_usp = false;
+at_usp = true;
 
 if at_usp
     main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';

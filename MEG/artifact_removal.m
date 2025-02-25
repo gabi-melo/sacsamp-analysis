@@ -1,7 +1,7 @@
 clear all
 clc
 
-at_usp = false;
+at_usp = true;
 
 if at_usp
     main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';
@@ -27,9 +27,9 @@ blocks = [1 4 7 10; 2 5 8 11; 3 6 9 12];
 for s = 1:numel(subs_meg)
     sub = subs_meg(s);
     if sub < 10
-        filedir{sub} = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+        filedir{sub} = sprintf('%ssacsamp0%i_s0%i/', data_folder, sub, sub);
     else
-        filedir{sub} = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
+        filedir{sub} = sprintf('%ssacsamp%i_s%i/', data_folder, sub, sub);
     end
 end
 
@@ -62,7 +62,7 @@ subs_num = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 45 36 48 16
 %% artifact rejection
 
 
-sub = 1;
+sub = 14;
 cond = 'pas';
 
 filename = sprintf('dat_prep_%s.mat', cond);
@@ -79,11 +79,11 @@ if strcmp(cond,'pas')
     cue_rep = task_info.cue_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==2);
     find(cue_rep>1)
 
-    targ_soa = task_info.targ_on(task_info.sub_num==subs_num(sub) & task_info.cond_num==2) - task_info.cue_on(task_info.sub_num==subs_num(sub) & task_info.cond_num==2);
-    histogram(targ_soa)
+    targ_lat = task_info.targ_fix(task_info.sub_num==subs_num(sub) & task_info.cond_num==2) - task_info.cue_on(task_info.sub_num==subs_num(sub) & task_info.cond_num==2);
+    % histogram(targ_lat)
 end
 
-%  cue_rep =  64   177   400   622   636   733
+%  cue_rep =  22   162   243   265   356   495   763   803
 
 
 %%% detect eye artifacts
@@ -93,7 +93,12 @@ cfg.viewmode = 'vertical';
 cfg.continuous = 'no';
 cfg.allowoverlap = 'yes';
 cfg.ploteventlabels = 'colorvalue';
-cfg.position = [300 300 1920-150 1080-150];
+
+if at_usp
+    cfg.position = [150 150 1920-300 1080-300];
+else
+    cfg.position = [300 300 1920-150 1080-150];
+end
 
 % cfg.channel = {'EYEH','EYEV'};    
 % cfg.verticalpadding = 1;
