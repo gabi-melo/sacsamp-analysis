@@ -6,11 +6,9 @@ at_usp = false;
 if at_usp
     main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';
     data_folder = 'F:/sacsamp-model/';
-    ft_folder = '/Users/Gabi/Documents/MATLAB/Fieldtrip/';
 else
     main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
     data_folder = '/Volumes/PortableSSD/sacsamp-model/';
-    ft_folder = '/Users/gabimelo/Documents/MATLAB/Fieldtrip/';
 end
 
 addpath(genpath(main_folder))
@@ -437,4 +435,35 @@ end
 
 file_name = 'output_rec.mat';
 save([data_folder file_name],'model_rec')
+
+
+%%
+%%% save models parameters
+
+
+file_name = 'fit_all';
+
+load([data_folder 'output_' file_name],'model_fit')
+
+params.siginf(:,1) = vertcat(model_fit(:,1).siginf)
+params.siginf(:,2) = vertcat(model_fit(:,2).siginf)
+params.siginf(:,3) = vertcat(model_fit(:,3).siginf)
+
+params.sigsen(:,1) = vertcat(model_fit(:,1).sigsen)
+params.sigsen(:,2) = vertcat(model_fit(:,2).sigsen)
+params.sigsen(:,3) = vertcat(model_fit(:,3).sigsen)
+
+params.sigrep(:,1) = vertcat(model_fit(:,1).sigrep)
+params.sigrep(:,2) = vertcat(model_fit(:,2).sigrep)
+params.sigrep(:,3) = vertcat(model_fit(:,3).sigrep)
+
+params.plapse(:,1) = vertcat(model_fit(:,1).plapse)
+params.plapse(:,2) = vertcat(model_fit(:,2).plapse)
+params.plapse(:,3) = vertcat(model_fit(:,3).plapse)
+
+params.alpha(:,1) = vertcat(model_fit(:,1).alpha)
+params.alpha(:,2) = vertcat(model_fit(:,2).alpha)
+params.alpha(:,3) = vertcat(model_fit(:,3).alpha)
+
+save([main_folder 'Model/params_' file_name],'params')
 
