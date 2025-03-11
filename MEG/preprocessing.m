@@ -1,15 +1,15 @@
 clear all
 clc
 
-at_usp = true;
+at_usp = false;
 
 if at_usp
     main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';
-    data_folder = 'F:/SACSAMP/';
+    data_folder = 'F:/sacsamp-data/';
     ft_folder = '/Users/Gabi/Documents/MATLAB/Fieldtrip/';
 else
     main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
-    data_folder = '/Volumes/PortableSSD/SACSAMP/';
+    data_folder = '/Volumes/PortableSSD/sacsamp-data/';
     ft_folder = '/Users/gabimelo/Documents/MATLAB/Fieldtrip/';
 end
 
@@ -21,16 +21,16 @@ ft_defaults
 
 subs_meg = [1:28];
 subs_meg([8 9 10 11 12 13]) = [];
-cond_str = {'act' 'pas' 'fix'};
-cond_num = [1 2 3];
+conds_str = {'act' 'pas' 'fix'};
+conds_num = [1 2 3];
 blocks = [1 4 7 10; 2 5 8 11; 3 6 9 12];
 
 for s = 1:numel(subs_meg)
-    sub = subs_meg(s);
-    if sub < 10
-        filedir{sub} = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+    si = subs_meg(s);
+    if si < 10
+        sub_folder{si} = sprintf('/Volumes/PortableSSD/sacsamp-data/sacsamp0%i_s0%i/', si, si);
     else
-        filedir{sub} = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
+        sub_folder{si} = sprintf('/Volumes/PortableSSD/sacsamp-data/sacsamp%i_s%i/', si, si);
     end
 end
 
@@ -38,7 +38,7 @@ load('full_data.mat','data')
 task_info = data;
 clear data
 
-subs_num = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 45 36 48 16 29 38 30 51];
+subs_id = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 45 36 48 16 29 38 30 51];
 
 
 % trigger labels
@@ -64,46 +64,44 @@ subs_num = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 45 36 48 16
 %% data preprocessing
 
 
-subs = [2];
+subs = subs_meg;
 
-cond_str = {'fix'};
-cond_num = [3];
-
-save_raw = true;
-
+save_raw = false;
 
 for s = 1:numel(subs)
 
-    sub = subs(s);
+    si = subs(s);
 
-    for c = 1:numel(cond_str)
+    for c = 1:numel(conds_str)
 
-        ci = cond_num(c);
-        cs = cond_str{c};
+        ci = conds_num(c);
+        cs = conds_str{c};
 
-        fprintf('\n\npreprocessing sub %i cond %s \n\n', sub, cs)
+        fprintf('\n\npreprocessing sub %i cond %s \n\n', si, cs)
+
+        file_raw = sprintf('raw_cat_%s.vhdr', cs);
 
         if save_raw 
 
             %%% concatenate blocks
     
-            filename1 = sprintf('run0%i_sss.fif', blocks(ci,1));
-            dat1 = ft_read_data([filedir{sub} filename1]);
-            evt1 = ft_read_event([filedir{sub} filename1]);
+            file1 = sprintf('run0%i_sss.fif', blocks(ci,1));
+            dat1 = ft_read_data([sub_folder{si} file1]);
+            evt1 = ft_read_event([sub_folder{si} file1]);
     
-            filename2 = sprintf('run0%i_sss.fif', blocks(ci,2));
-            dat2 = ft_read_data([filedir{sub} filename2]);
-            evt2 = ft_read_event([filedir{sub} filename2]);
+            file2 = sprintf('run0%i_sss.fif', blocks(ci,2));
+            dat2 = ft_read_data([sub_folder{si} file2]);
+            evt2 = ft_read_event([sub_folder{si} file2]);
     
-            filename3 = sprintf('run0%i_sss.fif', blocks(ci,3));
-            dat3 = ft_read_data([filedir{sub} filename3]);
-            evt3 = ft_read_event([filedir{sub} filename3]);
+            file3 = sprintf('run0%i_sss.fif', blocks(ci,3));
+            dat3 = ft_read_data([sub_folder{si} file3]);
+            evt3 = ft_read_event([sub_folder{si} file3]);
     
-            filename4 = sprintf('run%i_sss.fif', blocks(ci,4));
-            dat4 = ft_read_data([filedir{sub} filename4]);
-            evt4 = ft_read_event([filedir{sub} filename4]);
+            file4 = sprintf('run%i_sss.fif', blocks(ci,4));
+            dat4 = ft_read_data([sub_folder{si} file4]);
+            evt4 = ft_read_event([sub_folder{si} file4]);
     
-            hdr = ft_read_header([filedir{sub} filename4]);
+            hdr = ft_read_header([sub_folder{si} file4]);
     
             dat = cat(2, dat1, dat2, dat3, dat4);      % concatenate the data along the 2nd dimension
     
@@ -128,19 +126,18 @@ for s = 1:numel(subs)
     
             %%% save raw data
     
-            fprintf('\n\n  saving concatenated raw data - sub %i cond %s \n\n', sub, cs)
-            filename = sprintf('raw_cat_%s.vhdr', cs);
-            ft_write_data([filedir{sub} filename], dat, 'header', hdr, 'event', evt);
-            disp(' saved !')
+            fprintf('\n\n  saving concatenated raw data - sub %i cond %s \n\n', si, cs)
+            file_raw = sprintf('raw_cat_%s.vhdr', cs);
+            ft_write_data([sub_folder{si} file_raw], dat, 'header', hdr, 'event', evt);
+            disp('saved !')
 
         end
 
-        filename = sprintf('raw_cat_%s.vhdr', cs);
 
         %%% define trials based on triggers
         
         cfg = [];
-        cfg.dataset = [filedir{sub} filename];
+        cfg.dataset = [sub_folder{si} file_raw];
         cfg.trialdef.eventtype = 'STI101';
         cfg.trialdef.eventvalue = 81:92;      % target onset
         cfg.trialdef.prestim = 0.2;
@@ -179,15 +176,15 @@ for s = 1:numel(subs)
         %     end
         % end
 
-        if sub == 6 & strcmp(cs,'pas')
+        if si == 6 & strcmp(cs,'pas')
             r = [r 41 42 43];
-        elseif sub == 7 & strcmp(cs,'pas')
+        elseif si == 7 & strcmp(cs,'pas')
             r = [r 573 574 575];
-        elseif sub == 7 & strcmp(cs,'fix')
+        elseif si == 7 & strcmp(cs,'fix')
             r = [r 97 98 99 264 265 754 755];
-        elseif sub == 17 & strcmp(cs,'pas')
+        elseif si == 17 & strcmp(cs,'pas')
             r = [r 1 2 3 4];
-        elseif sub == 28 & strcmp(cs,'fix')
+        elseif si == 28 & strcmp(cs,'fix')
             r = [r 1 2];
         end
 
@@ -201,18 +198,20 @@ for s = 1:numel(subs)
 
 
         %%% add stimulus info to cfg.trl
-        
-        cfg.trl(:,5) = task_info.trl_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
-        cfg.trl(:,6) = task_info.targ_len(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
-        cfg.trl(:,7) = task_info.targ_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
-        cfg.trl(:,8) = task_info.blc_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
-        cfg.trl(:,9) = task_info.ref_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci);
 
-        % cfg.trl(:,5) = task_info.trl_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
-        % cfg.trl(:,6) = task_info.targ_len(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
-        % cfg.trl(:,7) = task_info.targ_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
-        % cfg.trl(:,8) = task_info.blc_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
-        % cfg.trl(:,9) = task_info.ref_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+        if si == 2 & ci == 2
+            cfg.trl(:,5) = task_info.trl_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+            cfg.trl(:,6) = task_info.targ_len(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+            cfg.trl(:,7) = task_info.targ_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+            cfg.trl(:,8) = task_info.blc_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+            cfg.trl(:,9) = task_info.ref_num(task_info.sub_num==subs_num(sub) & task_info.cond_num==ci & (task_info.ref_num < 82 | task_info.ref_num > 87));
+        else
+            cfg.trl(:,5) = task_info.trl_num(task_info.sub_num==subs_id(si) & task_info.cond_num==ci);
+            cfg.trl(:,6) = task_info.targ_len(task_info.sub_num==subs_id(si) & task_info.cond_num==ci);
+            cfg.trl(:,7) = task_info.targ_num(task_info.sub_num==subs_id(si) & task_info.cond_num==ci);
+            cfg.trl(:,8) = task_info.blc_num(task_info.sub_num==subs_id(si) & task_info.cond_num==ci);
+            cfg.trl(:,9) = task_info.ref_num(task_info.sub_num==subs_id(si) & task_info.cond_num==ci);
+        end
         
 
         %%% check number of trials
@@ -233,9 +232,6 @@ for s = 1:numel(subs)
         
         dat_prep.label(1) = {'EOGH'};
         dat_prep.label(2) = {'EOGV'};
-        % dat_select.label(3) = {''};
-        % dat_select.label(end-6) = {''};
-        % dat_select.label(end-5) = {''};
         dat_prep.label(end-4) = {'EYEH'};
         dat_prep.label(end-3) = {'EYEV'};
         dat_prep.label(end-2) = {'PUPIL'};
@@ -243,19 +239,19 @@ for s = 1:numel(subs)
             
         %%% save preprocessed data
         
-        fprintf('\n\n  saving preprocessed data - sub %i cond %s \n\n', sub, cs)
+        fprintf('\n\n  saving preprocessed data - sub %i cond %s \n\n', si, cs)
         
         dat = dat_prep;
-        filename = sprintf('dat_prep_%s.mat', cs);
-        save([filedir{sub} filename], 'dat')
+        file_dat = sprintf('dat_prep_%s.mat', cs);
+        save([sub_folder{si} file_dat], 'dat')
         
         trl = cfg.trl;
-        filename = sprintf('trl_prep_%s.mat', cs);
-        save([filedir{sub} filename], 'trl')
+        file_trl = sprintf('trl_prep_%s.mat', cs);
+        save([sub_folder{si} file_trl], 'trl')
         
         evt = cfg.event;
-        filename = sprintf('evt_prep_%s.mat', cs);
-        save([filedir{sub} filename], 'evt')
+        file_evt = sprintf('evt_prep_%s.mat', cs);
+        save([sub_folder{si} file_evt], 'evt')
 
         disp(' saved !')
 
@@ -271,9 +267,9 @@ end
 
 %%% plot orientation of planar gradiometers
 
-filename = '/Volumes/PortableSSD/SACSAMP/sacsamp22_s22/run01_sss.fif';
+file_fif = '/Volumes/PortableSSD/SACSAMP/sacsamp22_s22/run01_sss.fif';
 
-grad = ft_read_sens(filename, 'senstype', 'meg');
+grad = ft_read_sens(file_fif, 'senstype', 'meg');
 
 sel = find(strcmp(grad.chantype, 'megplanar'));
 
@@ -298,14 +294,14 @@ axis vis3d
 
 %%% visualize the head position indicator coils
 
-filename = '/Volumes/PortableSSD/SACSAMP/sacsamp22_s22/run01_sss.fif';
+file_fif = '/Volumes/PortableSSD/SACSAMP/sacsamp22_s22/run01_sss.fif';
 
 % visualize the known/fixed positions of the sensors
-hdr = ft_read_header(filename, 'coordsys', 'dewar');
+hdr = ft_read_header(file_fif, 'coordsys', 'dewar');
 ft_plot_sens(hdr.grad);
 
 % visualize the digitized positions of the head position indicator coils
-shape = ft_read_headshape(filename, 'coordsys', 'dewar');
+shape = ft_read_headshape(file_fif, 'coordsys', 'dewar');
 for ci = 1:size(shape.pos,1)
   if ~isempty(strfind(shape.label{ci},'hpi'))
       hold on;

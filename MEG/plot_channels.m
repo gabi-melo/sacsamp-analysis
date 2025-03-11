@@ -1,20 +1,43 @@
-clear all; clc;
+clear all
+clc
 
-main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
+at_usp = false;
+
+if at_usp
+    main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';
+    data_folder = 'F:/SACSAMP/';
+    ft_folder = '/Users/Gabi/Documents/MATLAB/Fieldtrip/';
+else
+    main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
+    data_folder = '/Volumes/PortableSSD/SACSAMP/';
+    ft_folder = '/Users/gabimelo/Documents/MATLAB/Fieldtrip/';
+end
+
 addpath(genpath(main_folder))
 cd(main_folder)
-
-load([main_folder 'full_data.mat'],'data','trls')
-full_data = data;
-full_trls = trls;
-clear data trls
-
-addpath('/Users/gabimelo/Documents/MATLAB/Fieldtrip/')
-addpath('/Users/gabimelo/Documents/MATLAB/eeglab/')
+ 
+addpath(ft_folder)
 ft_defaults
 
+subs_meg = [1:28];
+subs_meg([8 9 10 11 12 13]) = [];
+conds = {'act','pas','fix'};
+blocks = [1 4 7 10; 2 5 8 11; 3 6 9 12];
 
-%% 
+for s = 1:numel(subs_meg)
+    sub = subs_meg(s);
+    if sub < 10
+        filedir{sub} = sprintf('%ssacsamp0%i_s0%i/', data_folder, sub, sub);
+    else
+        filedir{sub} = sprintf('%ssacsamp%i_s%i/', data_folder, sub, sub);
+    end
+end
+
+load('full_data.mat','data')
+task_info = data;
+clear data
+
+subs_num = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 45 36 48 16 29 38 30 51];
 
 % trigger labels
 % act|pas|fix
@@ -24,10 +47,9 @@ ft_defaults
 % 24 |25 |26 - fixation point offset
 % 28 |29 |30 - response onset
 % 32 |33 |34 - response offset
-
 % 41:52 - array onset
 % 81:92 - target onset
-
+% 61:72 - cue onset
 
 % blocks num
 % act|pas|fix
@@ -35,127 +57,6 @@ ft_defaults
 %  4 | 5 | 6 
 %  7 | 8 | 9 
 % 10 |11 |12 
-
-
-%% select single block
-
-sub = 18;       % 04 | 18 | 22
-cond = 'fix';
-block = 6;
-
-filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
-
-if block < 10
-    filename = sprintf('run0%i_sss.fif', block);
-else
-    filename = sprintf('run%i_sss.fif', block);
-end
-filepath = [filedir filename];
-                                    
-hdr = ft_read_header(filepath);
-raw = ft_read_data(filepath);
-evt = ft_read_event(filepath);
-
-% size(raw)
-% recording of 327 channels for 279 seconds sampled at 1000 Hz (279000 samples)
-
-
-%% select all blocks from a condition
-
-sub = 18;       % 04 | 18 | 22
-cond = 'fix';
-
-if strcmp(cond, 'act')
-    blocks = [1 4 7 10];
-elseif strcmp(cond, 'pas')
-    blocks = [2 5 8 11];
-elseif strcmp(cond, 'fix')
-    blocks = [3 6 9 12];
-end
-
-filedir = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
-
-filename1 = sprintf('run0%i_sss.fif', blocks(1));
-filename2 = sprintf('run0%i_sss.fif', blocks(2));
-filename3 = sprintf('run0%i_sss.fif', blocks(3));
-filename4 = sprintf('run%i_sss.fif', blocks(4));
-
-filepath1 = [filedir filename1];
-filepath2 = [filedir filename2];
-filepath3 = [filedir filename3];
-filepath4 = [filedir filename4];
-
-hdr1 = ft_read_header(filepath1);
-raw1 = ft_read_data(filepath1);
-evt1 = ft_read_event(filepath1);
-
-hdr2 = ft_read_header(filepath2);
-raw2 = ft_read_data(filepath2);
-evt2 = ft_read_event(filepath2);
-
-hdr3 = ft_read_header(filepath3);
-raw3 = ft_read_data(filepath3);
-evt3 = ft_read_event(filepath3);
-
-hdr4 = ft_read_header(filepath4);
-raw4 = ft_read_data(filepath4);
-evt4 = ft_read_event(filepath4);
-
-hdr = hdr1;              
-raw = cat(2, raw1, raw2, raw3, raw4);     % concatenate data 
-
-% shift the sample of the triggers
-for i=1:length(evt2)
-  evt2(i).sample = evt2(i).sample + hdr1.nSamples; 
-end
-for i=1:length(evt3)
-  evt3(i).sample = evt3(i).sample + hdr2.nSamples; 
-end
-for i=1:length(evt4)
-  evt4(i).sample = evt4(i).sample + hdr3.nSamples;
-end
-
-evt = cat(1, evt1, evt2, evt3, evt4);     % concatenate events
-
-filename = sprintf('data_raw_%s.vhdr', cond);
-filepath = [filedir filename];
-ft_write_data(filepath, raw, 'header', hdr, 'event', evt);
-
-
-%% define trials based on triggers
-
-cfg = [];
-cfg.dataset = filepath;
-
-cfg.trialfun = 'ft_trialfun_general';
-cfg.trialdef.eventtype = 'STI101';
-cfg.trialdef.eventvalue = [81:92];      % target onset
-
-cfg.trialdef.prestim = 0.25;
-cfg.trialdef.poststim = 0.5;
-
-cfg = ft_definetrial(cfg);
-
-% insert end sample in cfg.trl 
-% evt = ft_read_event(filepath);
-% smp = vertcat(evt.sample);
-% val = vertcat(evt.value);
-% cfg.trl(:,2) = smp(val==trl_off);
-% 
-% dat_all = ft_redefinetrial(cfg, dat_all);
-
-
-%% preprocess data
-
-cfg.bsfilter = 'yes';                      % band-stop filter to remove line noise
-cfg.bsfreq = [49 51; 99 100; 149 151];     % line frequency (50Hz) and its harmonics
-
-dat_all = ft_preprocessing(cfg);
-
-% Besides these “conventional” filters, during preprocessing you can also apply a very sharp discrete Fourier transform filter (cfg.dftfilter). 
-% To make this dft filter very sharp, you have to pad the data to a large amount (cfg.padding), e.g., to 5 or 10 seconds. 
-% The DFT filter is effective in removing the 50 Hz line noise (and the harmonics at 100 and 150 Hz). 
-% After DFT filtering and multitaper frequency analysis, you will not notice any line noise in the power spectra any more.
 
 
 %% rename channels
@@ -168,12 +69,6 @@ dat_all.label(323) = {'EMG2'};
 dat_all.label(324) = {'EYEH'};
 dat_all.label(325) = {'EYEV'};
 dat_all.label(326) = {'PUPIL'};
-
-
-%% save data
-filename = sprintf('data_prep_%s.mat', cond);
-filepath = [filedir filename];
-save(filepath,'dat_all')
 
 
 %% add trigger labels to evt

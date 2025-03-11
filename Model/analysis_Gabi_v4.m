@@ -1,13 +1,22 @@
 clear all
-close all
 clc
 
-project_path = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
+at_usp = false;
 
-addpath(genpath(project_path))
-cd(project_path)
+if at_usp
+    main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';
+    data_folder = 'F:/sacsamp-model/';
+    ft_folder = '/Users/Gabi/Documents/MATLAB/Fieldtrip/';
+else
+    main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
+    data_folder = '/Volumes/PortableSSD/sacsamp-model/';
+    ft_folder = '/Users/gabimelo/Documents/MATLAB/Fieldtrip/';
+end
 
-load([project_path 'full_data.mat'])
+addpath(genpath(main_folder))
+cd(main_folder)
+
+load('full_data.mat','data')
 
 subs = unique(data.sub_num);
 n_sub = length(subs);
@@ -21,20 +30,20 @@ lens = [4 8 12];
 
 plotting = false;
 
-stat = struct;
-stat.sub_num = [];
-stat.cond_num = [];
-stat.targ_len = [];
-stat.seq_ang = [];
-stat.ang_mu = [];
-stat.ang_avg = [];
-stat.ang_coh = [];
-stat.rho_ang = [];
-stat.rho_c95_min = [];
-stat.rho_c95_max = [];
-stat.rho_mag_lo = [];
-stat.rho_mag_hi = [];
-stat.sig_err = [];
+stat_dat = struct;
+stat_dat.sub_num = [];
+stat_dat.cond_num = [];
+stat_dat.targ_len = [];
+stat_dat.seq_ang = [];
+stat_dat.ang_mu = [];
+stat_dat.ang_avg = [];
+stat_dat.ang_coh = [];
+stat_dat.rho_ang = [];
+stat_dat.rho_c95_min = [];
+stat_dat.rho_c95_max = [];
+stat_dat.rho_mag_lo = [];
+stat_dat.rho_mag_hi = [];
+stat_dat.sig_err = [];
 
 for sub_i = 1:n_sub
 
@@ -130,24 +139,24 @@ for sub_i = 1:n_sub
 
         for len_i = 1:n_len
             trls = find(targ_len == lens(len_i));
-            stat.sub_num(end+1) = subs(sub_i);
-            stat.cond_num(end+1) = cond_i;
-            stat.targ_len(end+1) = lens(len_i);
-            stat.seq_ang{end+1} = seq_ang{len_i};   % orientation samples (expressed in degrees)
-            stat.ang_mu{end+1}  = ang_mu(trls);     % generative mean (expressed in degrees)
-            stat.ang_avg{end+1} = ang_avg(trls);    % sequence average (expressed in degrees)
-            stat.ang_coh{end+1} = ang_coh(trls);    % sequence coherence (expressed as vector length)
-            stat.rho_ang(end+1) = rho_ang(len_i);                   % circular correlation btw sequence average and response
-            stat.rho_c95_min(end+1) = rho_ang_c95(1,len_i);         % 95% confidence interval of circular correlation
-            stat.rho_c95_max(end+1) = rho_ang_c95(2,len_i);         
-            stat.rho_mag_lo(end+1) = rho_ang_mag(1,len_i);
-            stat.rho_mag_hi(end+1) = rho_ang_mag(2,len_i); 
-            stat.sig_err(end+1) = sig_err(len_i);                   % s.d. of error btw sequence average and response (in degrees)
+            stat_dat.sub_num(end+1) = subs(sub_i);
+            stat_dat.cond_num(end+1) = cond_i;
+            stat_dat.targ_len(end+1) = lens(len_i);
+            stat_dat.seq_ang{end+1} = seq_ang{len_i};   % orientation samples (expressed in degrees)
+            stat_dat.ang_mu{end+1}  = ang_mu(trls);     % generative mean (expressed in degrees)
+            stat_dat.ang_avg{end+1} = ang_avg(trls);    % sequence average (expressed in degrees)
+            stat_dat.ang_coh{end+1} = ang_coh(trls);    % sequence coherence (expressed as vector length)
+            stat_dat.rho_ang(end+1) = rho_ang(len_i);                   % circular correlation btw sequence average and response
+            stat_dat.rho_c95_min(end+1) = rho_ang_c95(1,len_i);         % 95% confidence interval of circular correlation
+            stat_dat.rho_c95_max(end+1) = rho_ang_c95(2,len_i);         
+            stat_dat.rho_mag_lo(end+1) = rho_ang_mag(1,len_i);
+            stat_dat.rho_mag_hi(end+1) = rho_ang_mag(2,len_i); 
+            stat_dat.sig_err(end+1) = sig_err(len_i);                   % s.d. of error btw sequence average and response (in degrees)
         end
     end
 end
 
-save([project_path 'full_data.mat'],'stat','-append')
+save([main_folder 'Model/stat_dat'],'stat_dat')
 
 
 %% CIRCULAR INFERENCE MODEL
@@ -205,6 +214,7 @@ for sub_i = 1:n_sub
         data_fit.seqang = seq_ang;         % orientation samples (expressed in degrees)
         data_fit.resp   = resp_ang(:);     % orientation estimation report (expressed in degrees)
         
+
         % You should always either set sigsen to 0 or siginf to 0 because the two are
         % probably highly collinear - and therefore difficult to fit simultaneously.
         % You should try the model where both sigsen and siginf are set to 0, and
@@ -219,13 +229,15 @@ for sub_i = 1:n_sub
         %  sigrep = reporting noise (expressed in degrees modulo pi)
         %  plapse = reporting lapse rate
 
-        runs = 5;           % number of random starting points
+        nruns = 5;           % number of random starting points
         
-        % file_name = 'output_fit_sigsen.mat';
-        % out_fit = fit_model_circinf(data_fit,'nrun',runs,'verbose',1,'siginf',0,'sigrep',0);
 
-        file_name = 'output_fit_all.mat';
-        out_fit = fit_model_circinf(data_fit,'nrun',runs,'verbose',1);
+        % file_name = 'fit_sigsen';
+        % out_fit = fit_model_circinf(data_fit,'nrun',nruns,'verbose',1,'siginf',0,'sigrep',0);
+
+        file_name = 'fit_all';
+        out_fit = fit_model_circinf(data_fit,'nrun',nruns,'verbose',1);
+
 
         % disp(out_fit);
         model_fit(sub_i,cond_i) = out_fit;
@@ -271,8 +283,8 @@ for sub_i = 1:n_sub
         end
         
         if plotting
-            rho_ang = stat.rho_ang(stat.sub_num==subs(sub_i) & stat.cond_num==cond_i);  
-            sig_err = stat.sig_err(stat.sub_num==subs(sub_i) & stat.cond_num==cond_i);  
+            rho_ang = stat_dat.rho_ang(stat_dat.sub_num==subs(sub_i) & stat_dat.cond_num==cond_i);  
+            sig_err = stat_dat.sig_err(stat_dat.sub_num==subs(sub_i) & stat_dat.cond_num==cond_i);  
 
             % plot circular correlation coefficient for each number of targets
             figure('Color','white');
@@ -360,5 +372,69 @@ for sub_i = 1:n_sub
     end
 end
 
-save([project_path 'Model/' file_name],'model_fit','model_bst','stat_bst')
+save([data_folder 'output_' file_name '.mat'],'model_fit','model_bst','stat_bst')
+
+save([main_folder 'Model/stat_bst_' file_name '.mat'],'stat_bst')
+
+
+
+%% RECOVERY ANALYSIS
+
+
+tStart = tic;
+
+for sub_i = 1:n_sub
+
+    for cond_i = 1:n_cond
+        
+        sub_i
+        cond_i
+
+        % get information from datafile
+        resp_ang = data.resp_ang(data.sub_num==subs(sub_i) & data.cond_num==cond_i & data.targ_num==1)';
+        
+        % get number of trials
+        ntrls = numel(resp_ang);
+        trls  = unique(data.trl_num(data.sub_num==subs(sub_i) & data.cond_num==cond_i));
+        
+        % get sequence-specific information
+        seq_ang = cell(ntrls,1);     % orientation samples (expressed in degrees)
+
+        for itrl = 1:ntrls
+            seq_ang{itrl} = data.targ_ang(data.sub_num==subs(sub_i) & data.cond_num==cond_i & data.trl_num==trls(itrl));
+        end
+ 
+
+        nrep = 10;      % number of trial duplicates
+
+        % create data structure for model simulations
+        data_rec = [];
+        data_rec.kappa  = 3;           % generative coherence
+        data_rec.seqang = seq_ang;     % orientation samples (expressed in degrees)
+        data_rec.resp   = [];          % no responses included for simulations
+
+        if nrep > 1
+            % duplicate trials to estimate asymptotic fitting performance
+            fprintf('Using %d trial duplicates to estimate asymptotic fitting performance.\n',nrep);
+            data_rec.seqang = repmat(data_rec.seqang,[nrep,1]);
+        end
+
+        % simulate model (all parameters need to be fixed)
+        out_sim = fit_model_circinf(data_rec,'alpha',0,'sigsen',0,'siginf',2,'sigrep',5,'plapse',0.05);
+
+        % add simulated responses in data structure
+        data_rec.resp = out_sim.rt(:,1);
+
+        % fit simulated responses
+        out_rec = fit_model_circinf(data_rec,'nrun',1,'verbose',2,'sigsen',0)
+
+        model_rec(sub_i,cond_i) = out_rec;
+
+        toc(tStart)
+
+    end
+end
+
+file_name = 'output_rec.mat';
+save([data_folder file_name],'model_rec')
 

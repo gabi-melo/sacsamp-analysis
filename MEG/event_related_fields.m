@@ -1,15 +1,15 @@
 clear all
 clc
 
-at_usp = true;
+at_usp = false;
 
 if at_usp
     main_folder = '/Users/Gabi/Documents/GitHub/sacsamp-analysis/';
-    data_folder = 'F:/SACSAMP/';
+    data_folder = 'F:/sacsamp-data/';
     ft_folder = '/Users/Gabi/Documents/MATLAB/Fieldtrip/';
 else
     main_folder = '/Users/gabimelo/Documents/GitHub/sacsamp-analysis/';
-    data_folder = '/Volumes/PortableSSD/SACSAMP/';
+    data_folder = '/Volumes/PortableSSD/sacsamp-data/';
     ft_folder = '/Users/gabimelo/Documents/MATLAB/Fieldtrip/';
 end
 
@@ -21,18 +21,16 @@ ft_defaults
 
 subs_meg = [1:28];
 subs_meg([8 9 10 11 12 13]) = [];
-conds = {'act','pas','fix'};
+conds_str = {'act','pas','fix'};
 
 for s = 1:numel(subs_meg)
-    sub = subs_meg(s);
-    if sub < 10
-        filedir{sub} = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp0%i_s0%i/', sub, sub);
+    si = subs_meg(s);
+    if si < 10
+        sub_folder{si} = sprintf('/Volumes/PortableSSD/sacsamp-data/sacsamp0%i_s0%i/', si, si);
     else
-        filedir{sub} = sprintf('/Volumes/PortableSSD/SACSAMP/sacsamp%i_s%i/', sub, sub);
+        sub_folder{si} = sprintf('/Volumes/PortableSSD/sacsamp-data/sacsamp%i_s%i/', si, si);
     end
 end
-
-filedir_gen = '/Volumes/PortableSSD/SACSAMP/';
 
 
 % cfg.layout = 'neuromag306all.lay';
@@ -53,37 +51,36 @@ filedir_gen = '/Volumes/PortableSSD/SACSAMP/';
 %% event-related fields (ERFs)
 
     
-subs = [4 18];
+subs = subs_meg;
 
 for s = 1:numel(subs)
 
-    sub = subs(s);
+    si = subs(s);
 
-    for c = 1:numel(conds)
+    for c = 1:numel(conds_str)
 
-        cond = conds{c};
+        cs = conds_str{c};
 
         %%% load data
     
-        filename = sprintf('dat_filt_%s.mat', cond);
-        load([filedir{sub} filename], 'dat')
-        dat_filt = dat;
+        file_dat = sprintf('dat_clean_%s.mat', cs);
+        load([sub_folder{si} file_dat], 'dat')
+        dat_clean = dat;
 
 
         %%% compute the timelocked average ERFs
 
         cfg = [];
         % cfg.latency = [0 0.3];
-        dat_avg = ft_timelockanalysis(cfg, dat_filt);
+        dat_avg = ft_timelockanalysis(cfg, dat_clean);
         
         
         %%% save ERF data
         
-        fprintf('\n\n    saving ERF data - sub %i cond %s \n\n', sub, cond)
-
+        fprintf('\n\n    saving ERF data - sub %i cond %s \n\n', si, cs)
         dat = dat_avg;
-        filename = sprintf('dat_avg_%s.mat', cond);
-        save([filedir{sub} filename],'dat')
+        file_dat = sprintf('dat_avg_%s.mat', cs);
+        save([sub_folder{si} file_dat],'dat')
 
     end
 end
@@ -91,18 +88,118 @@ end
 
 %%
 
-sub = 4;
+%%% get erfs from all subjects
 
-filename = 'dat_avg_act.mat';
-load([filedir{sub} filename],'dat')
+subs = subs_meg;
+
+for c = 1:numel(conds_str) 
+
+    for s = 1:numel(subs)
+
+        file_all = sprintf('dat_avg_%s.mat', conds_str{c});
+        load([sub_folder{subs(s)} file_all],'dat')
+
+        dat_avg_all{s} = dat;
+    end
+
+    file_all = sprintf('dat_avg_all_%s.mat', conds_str{c});
+    dat = dat_avg_all;
+    save([data_folder file_all],'dat')
+end
+
+
+%%
+
+%%% calculate grand average by condition / magnetometers
+
+file_act = 'dat_avg_all_act.mat';
+load([data_folder file_act],'dat')
+avg_all_act = dat;
+
+file_pas = 'dat_avg_all_pas.mat';
+load([data_folder file_pas],'dat')
+avg_all_pas = dat;
+
+file_fix = 'dat_avg_all_fix.mat';
+load([data_folder file_fix],'dat')
+avg_all_fix = dat;
+
+cfg = [];
+cfg.channel = {'megmag'};
+cfg.latency = 'all';
+cfg.parameter = 'avg';
+
+gnd_avg_act = ft_timelockgrandaverage(cfg, avg_all_act{:});
+gnd_avg_pas = ft_timelockgrandaverage(cfg, avg_all_pas{:});
+gnd_avg_fix = ft_timelockgrandaverage(cfg, avg_all_fix{:});
+
+
+%%
+
+%%% plot ERFs for all sensors
+
+cfg = [];
+cfg.channel = {'megmag'};
+cfg.showlabels = 'yes';
+cfg.fontsize = 8;
+cfg.layout = 'neuromag306mag.lay';
+
+ft_multiplotER(cfg, gnd_avg_act, gnd_avg_pas, gnd_avg_fix);
+
+
+%% 
+
+%%% plot ERFs for a single sensor
+
+cfg = [];
+cfg.fontsize = 12;
+cfg.showlegend = 'yes';
+cfg.channel = 'MEG0111';
+
+ft_singleplotER(cfg, gnd_avg_act, gnd_avg_pas, gnd_avg_fix);
+
+
+%%
+
+%%% plot topographic distribution of ERFs
+
+cfg = [];
+cfg.channel = {'megmag'};
+cfg.fontsize = 10;
+% cfg.xlim = [0 0.2];
+cfg.xlim = [0 : 0.05 : 0.2];      % plot over time
+% cfg.xlim = [-0.2 : 0.1 : 0.3];      % plot over time
+cfg.colorbar = 'yes';
+% cfg.layout = 'neuromag306mag.lay';
+cfg.layout = 'neuromag306mag_helmet.mat';
+
+ft_topoplotER(cfg, gnd_avg_act);
+sgtitle('ACT')
+ft_topoplotER(cfg, gnd_avg_pas);
+sgtitle('PAS')
+ft_topoplotER(cfg, gnd_avg_fix);
+sgtitle('FIX')
+
+
+
+
+
+%%
+
+%%
+
+si = 4;
+
+file_act = 'dat_avg_act.mat';
+load([sub_folder{si} file_act],'dat')
 avg_act = dat;
 
-filename = 'dat_avg_pas.mat';
-load([filedir{sub} filename],'dat')
+file_pas = 'dat_avg_pas.mat';
+load([sub_folder{si} file_pas],'dat')
 avg_pas = dat;
 
-filename = 'dat_avg_fix.mat';
-load([filedir{sub} filename],'dat')
+file_fix = 'dat_avg_fix.mat';
+load([sub_folder{si} file_fix],'dat')
 avg_fix = dat;
 
 
