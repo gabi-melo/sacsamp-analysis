@@ -228,12 +228,17 @@ for sub_i = 1:n_sub
         %  plapse = reporting lapse rate
 
         nruns = 5;           % number of random starting points
-        
 
-        % file_name = 'fit_sigsen';
+        % file_name = 'fit_sigsen_v2';
         % out_fit = fit_model_circinf(data_fit,'nrun',nruns,'verbose',1,'siginf',0,'sigrep',0);
 
-        file_name = 'fit_all';
+        % file_name = 'fit_siginf_v2';
+        % out_fit = fit_model_circinf(data_fit,'nrun',nruns,'verbose',1,'sigsen',0,'sigrep',0);
+
+        % file_name = 'fit_sigrep_v2';
+        % out_fit = fit_model_circinf(data_fit,'nrun',nruns,'verbose',1,'siginf',0,'sigsen',0);
+
+        file_name = 'fit_all_v2';
         out_fit = fit_model_circinf(data_fit,'nrun',nruns,'verbose',1);
 
 
@@ -337,47 +342,41 @@ for sub_i = 1:n_sub
             close all
         end
 
-
-        %%% RECOVERY ANALYSIS
-
-        % nrep = 10;      % number of trial duplicates
-        % 
-        % % create data structure for model simulations
-        % data_rec = [];
-        % data_rec.kappa  = 3;           % generative coherence
-        % data_rec.seqang = seq_ang;     % orientation samples (expressed in degrees)
-        % data_rec.resp   = [];          % no responses included for simulations
-        % 
-        % if nrep > 1
-        %     % duplicate trials to estimate asymptotic fitting performance
-        %     fprintf('Using %d trial duplicates to estimate asymptotic fitting performance.\n',nrep);
-        %     data_rec.seqang = repmat(data_rec.seqang,[nrep,1]);
-        % end
-        % 
-        % % simulate model (all parameters need to be fixed)
-        % out_sim = fit_model_circinf(data_rec,'alpha',0,'sigsen',0,'siginf',2,'sigrep',5,'plapse',0.05);
-        % 
-        % model_sim(sub_i,cond_i) = out_sim;
-        % 
-        % % add simulated responses in data structure
-        % data_rec.resp = out_sim.rt(:,1);
-        % 
-        % % fit simulated responses
-        % out_rec = fit_model_circinf(data_rec,'nrun',1,'verbose',2,'sigsen',0)
-        % 
-        % model_rec(sub_i,cond_i) = out_rec;
-
     end
 end
 
-save([data_folder 'output_' file_name '.mat'],'model_fit','model_bst','stat_bst')
+save([data_folder 'output_' file_name '.mat'],'model_fit','model_bst')
 
 save([main_folder 'Model/stat_bst_' file_name '.mat'],'stat_bst')
 
 
+% save fitted parameters
+
+params.siginf(:,1) = vertcat(model_fit(:,1).siginf)
+params.siginf(:,2) = vertcat(model_fit(:,2).siginf)
+params.siginf(:,3) = vertcat(model_fit(:,3).siginf)
+
+params.sigsen(:,1) = vertcat(model_fit(:,1).sigsen)
+params.sigsen(:,2) = vertcat(model_fit(:,2).sigsen)
+params.sigsen(:,3) = vertcat(model_fit(:,3).sigsen)
+
+params.sigrep(:,1) = vertcat(model_fit(:,1).sigrep)
+params.sigrep(:,2) = vertcat(model_fit(:,2).sigrep)
+params.sigrep(:,3) = vertcat(model_fit(:,3).sigrep)
+
+params.plapse(:,1) = vertcat(model_fit(:,1).plapse)
+params.plapse(:,2) = vertcat(model_fit(:,2).plapse)
+params.plapse(:,3) = vertcat(model_fit(:,3).plapse)
+
+params.alpha(:,1) = vertcat(model_fit(:,1).alpha)
+params.alpha(:,2) = vertcat(model_fit(:,2).alpha)
+params.alpha(:,3) = vertcat(model_fit(:,3).alpha)
+
+save([main_folder 'Model/params_' file_name '.mat'],'params')
+
 
 %% RECOVERY ANALYSIS
-
+%%% check the model's ability to accurately recover the true parameters from simulated data
 
 tStart = tic;
 
@@ -402,7 +401,6 @@ for sub_i = 1:n_sub
             seq_ang{itrl} = data.targ_ang(data.sub_num==subs(sub_i) & data.cond_num==cond_i & data.trl_num==trls(itrl));
         end
  
-
         nrep = 10;      % number of trial duplicates
 
         % create data structure for model simulations
@@ -417,13 +415,21 @@ for sub_i = 1:n_sub
             data_rec.seqang = repmat(data_rec.seqang,[nrep,1]);
         end
 
-        % simulate model (all parameters need to be fixed)
-        out_sim = fit_model_circinf(data_rec,'alpha',0,'sigsen',0,'siginf',2,'sigrep',5,'plapse',0.05);
+        orig.alpha = 0;
+        orig.sigsen = 0;
+        orig.siginf = 2;
+        % orig.sigrep = 5;
+        orig.sigrep = 4;
+        orig.plapse = 0.05;
+
+        % simulate data from the model with known parameters (all parameters need to be fixed)
+        out_sim = fit_model_circinf(data_rec,'alpha',orig.alpha,'sigsen',orig.sigsen,'siginf',orig.siginf,'sigrep',orig.sigrep,'plapse',orig.plapse);
 
         % add simulated responses in data structure
         data_rec.resp = out_sim.rt(:,1);
 
-        % fit simulated responses
+        % fit the model to the simulated data 
+        % compare the recovered parameters with the original ones
         out_rec = fit_model_circinf(data_rec,'nrun',1,'verbose',2,'sigsen',0)
 
         model_rec(sub_i,cond_i) = out_rec;
@@ -433,37 +439,95 @@ for sub_i = 1:n_sub
     end
 end
 
-file_name = 'output_rec.mat';
+file_name = 'output_rec_v3.mat';
 save([data_folder file_name],'model_rec')
+
+% save fitted parameters
+params.siginf(:,1) = vertcat(model_rec(:,1).siginf)
+params.siginf(:,2) = vertcat(model_rec(:,2).siginf)
+params.siginf(:,3) = vertcat(model_rec(:,3).siginf)
+
+params.sigsen(:,1) = vertcat(model_rec(:,1).sigsen)
+params.sigsen(:,2) = vertcat(model_rec(:,2).sigsen)
+params.sigsen(:,3) = vertcat(model_rec(:,3).sigsen)
+
+params.sigrep(:,1) = vertcat(model_rec(:,1).sigrep)
+params.sigrep(:,2) = vertcat(model_rec(:,2).sigrep)
+params.sigrep(:,3) = vertcat(model_rec(:,3).sigrep)
+
+params.plapse(:,1) = vertcat(model_rec(:,1).plapse)
+params.plapse(:,2) = vertcat(model_rec(:,2).plapse)
+params.plapse(:,3) = vertcat(model_rec(:,3).plapse)
+
+params.alpha(:,1) = vertcat(model_rec(:,1).alpha)
+params.alpha(:,2) = vertcat(model_rec(:,2).alpha)
+params.alpha(:,3) = vertcat(model_rec(:,3).alpha)
+
+save([main_folder 'Model/params_rec_v3.mat'],'params','orig')
 
 
 %%
-%%% save models parameters
+%%% plot recovered parameters versus original parameters
 
+load([main_folder 'Model/params_rec'],'params','orig')
+% load([main_folder 'Model/params_rec_v3'],'params','orig')
 
-file_name = 'fit_all';
+conds = ["act","pas","fix"];
 
-load([data_folder 'output_' file_name],'model_fit')
+figure('Color','white');
 
-params.siginf(:,1) = vertcat(model_fit(:,1).siginf)
-params.siginf(:,2) = vertcat(model_fit(:,2).siginf)
-params.siginf(:,3) = vertcat(model_fit(:,3).siginf)
+subplot(1,4,1)
+hold on
+ylim([0,3]);
+bar(conds,mean(params.siginf,1),0.5,'EdgeColor','b','FaceColor',[0.5,0.5,1],'LineWidth',1.5);
+for cond_i = 1:3
+    plot([cond_i,cond_i],quantile(params.siginf(:,cond_i),[0.025,0.975]),'b-','LineWidth',0.75);
+    plot(cond_i,orig.siginf,'wo','MarkerSize',9,'MarkerFaceColor','k','LineWidth',1.5);
+end
+hold off
+set(gca,'TickDir','out','PlotBoxAspectRatio',[1,1,1],'LineWidth',0.75);
+xlabel('condition','FontSize',12);
+ylabel('siginf','FontSize',12);
+title('siginf')
 
-params.sigsen(:,1) = vertcat(model_fit(:,1).sigsen)
-params.sigsen(:,2) = vertcat(model_fit(:,2).sigsen)
-params.sigsen(:,3) = vertcat(model_fit(:,3).sigsen)
+subplot(1,4,2)
+hold on
+ylim([0,10]);
+bar(conds,mean(params.sigrep,1),0.5,'EdgeColor','b','FaceColor',[0.5,0.5,1],'LineWidth',1.5);
+for cond_i = 1:3
+    plot([cond_i,cond_i],quantile(params.sigrep(:,cond_i),[0.025,0.975]),'b-','LineWidth',0.75);
+    plot(cond_i,orig.sigrep,'wo','MarkerSize',9,'MarkerFaceColor','k','LineWidth',1.5);
+end
+hold off
+set(gca,'TickDir','out','PlotBoxAspectRatio',[1,1,1],'LineWidth',0.75);
+xlabel('condition','FontSize',12);
+ylabel('sigrep','FontSize',12);
+title('sigrep')
 
-params.sigrep(:,1) = vertcat(model_fit(:,1).sigrep)
-params.sigrep(:,2) = vertcat(model_fit(:,2).sigrep)
-params.sigrep(:,3) = vertcat(model_fit(:,3).sigrep)
+subplot(1,4,3)
+hold on
+ylim([0,0.1]);
+bar(conds,mean(params.plapse,1),0.5,'EdgeColor','b','FaceColor',[0.5,0.5,1],'LineWidth',1.5);
+for cond_i = 1:3
+    plot([cond_i,cond_i],quantile(params.plapse(:,cond_i),[0.025,0.975]),'b-','LineWidth',0.75);
+    plot(cond_i,orig.plapse,'wo','MarkerSize',9,'MarkerFaceColor','k','LineWidth',1.5);
+end
+hold off
+set(gca,'TickDir','out','PlotBoxAspectRatio',[1,1,1],'LineWidth',0.75);
+xlabel('condition','FontSize',12);
+ylabel('plapse','FontSize',12);
+title('plapse')
 
-params.plapse(:,1) = vertcat(model_fit(:,1).plapse)
-params.plapse(:,2) = vertcat(model_fit(:,2).plapse)
-params.plapse(:,3) = vertcat(model_fit(:,3).plapse)
-
-params.alpha(:,1) = vertcat(model_fit(:,1).alpha)
-params.alpha(:,2) = vertcat(model_fit(:,2).alpha)
-params.alpha(:,3) = vertcat(model_fit(:,3).alpha)
-
-save([main_folder 'Model/params_' file_name],'params')
-
+subplot(1,4,4)
+hold on
+ylim([-0.1,0.1]);
+bar(conds,mean(params.alpha,1),0.5,'EdgeColor','b','FaceColor',[0.5,0.5,1],'LineWidth',1.5);
+for cond_i = 1:3
+    plot([cond_i,cond_i],quantile(params.alpha(:,cond_i),[0.025,0.975]),'b-','LineWidth',0.75);
+    plot(cond_i,orig.alpha,'wo','MarkerSize',9,'MarkerFaceColor','k','LineWidth',1.5);
+end
+hold off
+set(gca,'TickDir','out','PlotBoxAspectRatio',[1,1,1],'LineWidth',0.75);
+xlabel('condition','FontSize',12);
+ylabel('alpha','FontSize',12);
+title('alpha')
