@@ -60,7 +60,7 @@ subs_id = [10 9 13 4 17 21 11 1 22 25 26 19 18 20 28 34 23 27 49 42 45 36 48 16 
 % 10 |11 |12 
 
 
-%% preprocess data
+%% data preprocessing
 
 subs = subs_meg;
 save_raw = false;
@@ -112,6 +112,7 @@ for s = 1:numel(subs)
             evt = cat(1, evt1, evt2, evt3, evt4);      % concatenate the events along the 2nd dimension
    
             %%% save data
+            fprintf('\n\n  saving data - sub %i cond %s \n\n', si, cs)
             file_raw = sprintf('raw_cat_%s.vhdr', cs);
             ft_write_data([sub_folder{si} file_raw], dat, 'header', hdr, 'event', evt);
             disp('saved !')

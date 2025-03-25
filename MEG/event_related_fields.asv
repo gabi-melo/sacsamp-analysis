@@ -36,10 +36,14 @@ end
 % cfg.layout = 'neuromag306mag.lay';
 % cfg.layout = 'neuromag306planar.lay';
 % cfg.layout = 'neuromag306cmb.lay';
+
 % cfg.layout = 'neuromag306all_helmet.mat';
+% cfg.layout = 'neuromag306mag_helmet.mat';
+% cfg.layout = 'neuromag306planar_helmet.mat';
+% cfg.layout = 'neuromag306cmb_helmet.mat';
 
 
-%% compute the timelocked average ERFs
+%% event-related fields (ERFs)
     
 subs = subs_meg;
 
@@ -54,14 +58,16 @@ for s = 1:numel(subs)
         load([sub_folder{si} file_dat], 'dat')
         dat_clean = dat;
 
-        %%% compute ERFs
+        %%% compute the timelocked average ERFs
         cfg = [];
         cfg.channel = {'megplanar'};
         dat_avg = ft_timelockanalysis(cfg, dat_clean);
 
+        %%% perform baseline correction
+        cfg.baseline = [-0.1 0];
+        dat_cmb = ft_timelockbaseline(cfg, dat_avg);
+
         %%% combine planar gradiometers
-        % cfg.demean = 'yes';            % perform baseline correction
-        % cfg.baselinewindow = [-0.1 0];
         dat_cmb = ft_combineplanar(cfg, dat_cmb);
 
         %%% save ERF data
@@ -73,14 +79,15 @@ for s = 1:numel(subs)
 end
 
 
-%% compute the grand average over all subjects
+%%
+%%% calculate grand average over all subjects
 
 for c = 1:numel(conds_str) 
 
     dat_avg_all = [];
-    for s = 1:numel(subs_meg)
+    for s = 1:numel(subs)
         file_sub = sprintf('dat_cmb_%s.mat', conds_str{c});
-        load([sub_folder{subs_meg(s)} file_sub],'dat')
+        load([sub_folder{subs(s)} file_sub],'dat')
         dat_avg_all{s} = dat;
     end
 
@@ -136,3 +143,81 @@ ft_topoplotER(cfg, gnd_avg_pas);
 sgtitle('PAS')
 ft_topoplotER(cfg, gnd_avg_fix);
 sgtitle('FIX')
+
+
+
+
+%%
+
+%%
+
+si = 4;
+
+file_act = 'dat_avg_act.mat';
+load([sub_folder{si} file_act],'dat')
+avg_act = dat;
+
+file_pas = 'dat_avg_pas.mat';
+load([sub_folder{si} file_pas],'dat')
+avg_pas = dat;
+
+file_fix = 'dat_avg_fix.mat';
+load([sub_folder{si} file_fix],'dat')
+avg_fix = dat;
+
+
+%% 
+
+%%% plot ERFs for all sensors
+
+cfg = [];
+cfg.channel = {'megmag'};
+cfg.showlabels = 'yes';
+cfg.fontsize = 8;
+cfg.layout = 'neuromag306mag.lay';
+
+ft_multiplotER(cfg, avg_act);
+sgtitle('ACT')
+ft_multiplotER(cfg, avg_pas);
+sgtitle('PAS')
+ft_multiplotER(cfg, avg_fix);
+sgtitle('FIX')
+
+
+%% 
+
+%%% plot topographic distribution of ERFs
+
+cfg = [];
+cfg.channel = {'megmag'};
+cfg.fontsize = 10;
+cfg.xlim = [0 0.3];
+% cfg.xlim = [-0.2 : 0.1 : 0.3];      % plot over time
+cfg.colorbar = 'yes';
+% cfg.layout = 'neuromag306mag_helmet.mat';
+cfg.layout = 'neuromag306mag.lay';
+
+ft_topoplotER(cfg, avg_act);
+sgtitle('ACT')
+ft_topoplotER(cfg, avg_pas);
+sgtitle('PAS')
+ft_topoplotER(cfg, avg_fix);
+sgtitle('FIX')
+
+
+%% 
+
+%%% plot ERFs for a single sensor
+
+cfg = [];
+cfg.fontsize = 12;
+cfg.channel = 'MEG2333';
+
+ft_singleplotER(cfg, avg_act);
+sgtitle('ACT')
+ft_singleplotER(cfg, avg_pas);
+sgtitle('PAS')
+ft_singleplotER(cfg, avg_fix);
+sgtitle('FIX')
+
+
